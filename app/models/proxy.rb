@@ -8,5 +8,6 @@ class Proxy < ActiveRecord::Base
 	
 	validates :ip, :presence => true, :uniqueness => true
 	validates :port, :presence => true
+	validates :country, :presence => true
 	
 end

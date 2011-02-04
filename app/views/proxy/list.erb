@@ -1,0 +1,24 @@
+<h1>Proxy Servers</h1>
+
+<% proxies = Proxy.all %>
+
+<table>
+<thead>
+	<tr>
+		<th>IP Address</th>
+		<th>Port</th>
+		<th>Country</th>
+		<th>Last Contact</ht>
+	</tr>
+</thead>
+<tbody>
+	<% proxies.each do |proxy| %>
+	<tr>
+		<td><%= proxy.ip %></td>
+		<td><%= proxy.port %></td>
+		<td><%= proxy.country %></td>
+		<td></td>
+	</tr>	
+	<% end %>
+</tbody>
+</table>
