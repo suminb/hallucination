@@ -1,2 +1,0 @@
-module ProxiesHelper
-end
