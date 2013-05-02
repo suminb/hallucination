@@ -4,10 +4,13 @@ from models import *
 
 import logging
 
-DEFAULT_TIMEOUT = 10
 
 def create_db():
     db.create_all()
+
+
+def get(id):
+    return Proxy.query.get(id)
 
 
 def insert(protocol, host, port):
@@ -29,8 +32,33 @@ def delete(id):
     pass
 
 
-def get(id):
-    return Proxy.query.get(id)
+def import_proxies(file_name):
+    import re
+
+    with open(file_name) as f:
+        for line in f.readlines():
+            # FIXME: This is an incomplete pattern matching
+            match = re.match(r'(\w+)://([a-zA-Z0-9_.]+):(\d+)', line)
+
+            if match != None:
+                protocol, host, port = match.group(1), match.group(2), int(match.group(3))
+
+                print protocol, host, port
+
+                proxy = Proxy(protocol=protocol, host=host, port=port)
+
+                try:
+                    db.session.add(proxy)
+                    db.session.commit()
+                except Exception as e:
+                    logging.error(e)
+                    db.session.rollback()
+
+
+def export_proxies():
+    for row in Proxy.query.all():
+        print '%s://%s:%d' % (row.protocol, row.host, row.port)
+
 
 def select(n):
     """Randomly selects ``n`` proxy records. If ``n`` is 1, it returns a single
@@ -53,72 +81,7 @@ def report(id, status):
     pass
 
 
-def access_reference_page(proxy, timeout=DEFAULT_TIMEOUT):
-
-    import random
-    import requests
-
-    proxy_dict = {'http': '%s:%d' % (proxy.host, proxy.port)}
-    random_key = random.randint(0, 100000000)
-    url = 'http://static.suminb.com/ref.php?key=%d' % random_key
-
-    try:
-        r = requests.get(url, proxies=proxy_dict, timeout=timeout)
-
-        print r.status_code
-        print r.text
-
-        if r.status_code == 200 and r.text.strip() == str(random_key):
-            return True
-
-    except Exception as e:
-        logging.error(e)
-
-    return False
-
-
-def access_nonexisting_page(proxy, timeout=DEFAULT_TIMEOUT):
-
-    import requests
-
-    proxy_dict = {'http': '%s:%d' % (proxy.host, proxy.port)}
-    url = 'http://static.suminb.com/nonexisting'
-
-    try:
-        r = requests.get(url, proxies=proxy_dict, timeout=timeout)
-
-        print r.status_code
-        print r.text
-
-        if r.status_code == 404:
-            return True
-
-    except Exception as e:
-        logging.error(e)
-
-    return False
-
-
-def access_nonexisting_domain(proxy, timeout=DEFAULT_TIMEOUT):
-
-    import requests
-
-    proxy_dict = {'http': '%s:%d' % (proxy.host, proxy.port)}
-    url = 'http://nonexisting.suminb.com'
-
-    try:
-        r = requests.get(url, proxies=proxy_dict, timeout=timeout)
-
-        # Should not reach here unless the proxy is lying.
-        return False
-
-    except Exception as e:
-        logging.error(e)
-
-    return True
-
-
-def make_request(url, headers=[], params=[], timeout=DEFAULT_TIMEOUT):
+def make_request(url, headers=[], params=[], timeout=config.DEFAULT_TIMEOUT):
     """Fetches a URL via a automatically selected proxy server, then reports the status."""
 
     from datetime import datetime
@@ -168,5 +131,4 @@ if __name__ == '__main__':
     #r = make_request('http://blog.suminbbb.com')
     #print r.text.encode('utf-8')
 
-    print access_nonexisting_domain(get(1))
-    
+    import_proxies('proxylist.txt')
