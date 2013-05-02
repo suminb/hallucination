@@ -3,6 +3,9 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 #from sqlalchemy.dialects.postgresql import UUID
 from core import app, db
 
+import logging
+import config
+
 
 def serialize(obj):
     import json
@@ -45,11 +48,73 @@ class Proxy(db.Model):
     access_time = db.Column(db.Float(precision=64)) # aggregated average value
     last_updated = db.Column(db.DateTime(timezone=True)) # aggregated average value
 
+    def __repr__(self):
+        return 'Proxy %s://%s:%d' % (self.protocol, self.host, self.port)
+
     def serialize(self):
         return serialize(self)
 
-    def __repr__(self):
-        return 'Proxy %s://%s:%d' % (self.protocol, self.host, self.port)
+    def access_reference_page(self, timeout=config.DEFAULT_TIMEOUT):
+        """Tests if the proxy server returns an HTTP 200 message and a correct content
+        when trying to access a reference page."""
+
+        import random
+        import requests
+
+        proxy_dict = {'http': '%s:%d' % (self.host, self.port)}
+        random_key = random.randint(0, 100000000)
+        url = 'http://static.suminb.com/ref.php?key=%d' % random_key
+
+        try:
+            r = requests.get(url, proxies=proxy_dict, timeout=timeout)
+
+            if r.status_code == 200 and r.text.strip() == str(random_key):
+                return True
+
+        except Exception as e:
+            logging.error(e)
+
+        return False
+
+    def access_nonexisting_page(self, timeout=config.DEFAULT_TIMEOUT):
+        """Tests if the proxy server returns an HTTP 404 message when trying to access a
+        non-existing page."""
+
+        import requests
+
+        proxy_dict = {'http': '%s:%d' % (self.host, self.port)}
+        url = 'http://static.suminb.com/nonexisting'
+
+        try:
+            r = requests.get(url, proxies=proxy_dict, timeout=timeout)
+
+            if r.status_code == 404:
+                return True
+
+        except Exception as e:
+            logging.error(e)
+
+        return False
+
+    def access_nonexisting_domain(self, timeout=config.DEFAULT_TIMEOUT):
+        """Tests if the proxy server times-out when trying to access a non-existing domain."""
+
+        import requests
+
+        proxy_dict = {'http': '%s:%d' % (self.host, self.port)}
+        url = 'http://nonexisting.suminb.com'
+
+        try:
+            r = requests.get(url, proxies=proxy_dict, timeout=timeout)
+
+            # Should not reach here unless the proxy is lying.
+            return False
+
+        except Exception as e:
+            logging.error(e)
+
+        return True
+
 
 
 class AccessRecord(db.Model):
