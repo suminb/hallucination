@@ -43,7 +43,7 @@ def import_proxies(file_name):
             if match != None:
                 protocol, host, port = match.group(1), match.group(2), int(match.group(3))
 
-                print protocol, host, port
+                logging.info('Insert: %s' % line)
 
                 proxy = Proxy(protocol=protocol, host=host, port=port)
 
