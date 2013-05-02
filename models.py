@@ -1,3 +1,4 @@
+from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.ext.declarative import DeclarativeMeta
 #from sqlalchemy.dialects.postgresql import UUID
 from core import app, db
@@ -33,6 +34,8 @@ class Proxy(db.Model):
 
     """
 
+    __table_args__ = (UniqueConstraint('protocol', 'host', 'port'),)
+
     id = db.Column('ROWID', db.Integer, primary_key=True)
     protocol = db.Column(db.String(8))
     host = db.Column(db.String(255))
@@ -45,6 +48,9 @@ class Proxy(db.Model):
     def serialize(self):
         return serialize(self)
 
+    def __repr__(self):
+        return 'Proxy %s://%s:%d' % (self.protocol, self.host, self.port)
+
 
 class AccessRecord(db.Model):
     id = db.Column('ROWID', db.Integer, primary_key=True)
@@ -55,8 +61,9 @@ class AccessRecord(db.Model):
     remote_address = db.Column(db.String(64))
     
     alive = db.Column(db.Boolean)
-    access_time = db.Column(db.Float(precision=64))
+    url = db.Column(db.String(255))
     status_code = db.Column(db.Integer)
+    access_time = db.Column(db.Float(precision=64))
 
     def serialize(self):
         return serialize(self)
