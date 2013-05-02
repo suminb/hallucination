@@ -126,9 +126,4 @@ def make_request(url, headers=[], params=[], timeout=config.DEFAULT_TIMEOUT):
     return r
 
 if __name__ == '__main__':
-    #create_db()
-    #print insert('http', '118.145.3.44', '81')
-    #r = make_request('http://blog.suminbbb.com')
-    #print r.text.encode('utf-8')
-
-    import_proxies('proxylist.txt')
+    pass
