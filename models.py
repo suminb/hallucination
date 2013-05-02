@@ -1,9 +1,7 @@
-from flask.ext.sqlalchemy import SQLAlchemy
 from sqlalchemy.ext.declarative import DeclarativeMeta
-from sqlalchemy.dialects.postgresql import UUID
-from core import app
+#from sqlalchemy.dialects.postgresql import UUID
+from core import app, db
 
-db = SQLAlchemy(app)
 
 def serialize(obj):
     import json
@@ -22,7 +20,20 @@ def serialize(obj):
 
 
 class Proxy(db.Model):
-    id = db.Column(UUID, primary_key=True)
+    """
+    In SQLite, every row of every table has an 64-bit signed integer ROWID.
+    The ROWID for each row is unique among all rows in the same table.
+
+    You can access the ROWID of an SQLite table using one the special column
+    names ROWID, _ROWID_, or OID. Except if you declare an ordinary table column
+    to use one of those special names, then the use of that name will refer to
+    the declared column not to the internal ROWID.
+
+    See http://sqlite.org/autoinc.html for more details.
+
+    """
+
+    id = db.Column('ROWID', db.Integer, primary_key=True)
     protocol = db.Column(db.String(8))
     host = db.Column(db.String(255))
     port = db.Column(db.Integer)
@@ -36,8 +47,8 @@ class Proxy(db.Model):
 
 
 class AccessRecord(db.Model):
-    id = db.Column(UUID, primary_key=True)
-    proxy_id = db.Column(UUID)
+    id = db.Column('ROWID', db.Integer, primary_key=True)
+    proxy_id = db.Column(db.Integer)
     timestamp = db.Column(db.DateTime(timezone=True))
 
     user_agent = db.Column(db.String(255))

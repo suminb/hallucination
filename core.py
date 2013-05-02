@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from flask.ext.sqlalchemy import SQLAlchemy
 
 import os, sys
 import uuid
@@ -8,6 +9,8 @@ import config
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_URI
+
+db = SQLAlchemy(app)
 
 from models import *
 
