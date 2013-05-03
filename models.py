@@ -117,14 +117,41 @@ class Proxy(db.Model):
 
     def fetch_url(self, url, headers=[], params=[]):
 
+        from datetime import datetime
+        import time
         import requests
         import proxybank
 
         proxy_dict = {self.protocol: '%s:%d' % (self.host, self.port)}
+        alive = False
+        status_code = None
 
-        req = requests.get(url, headers=headers, proxies=proxy_dict, timeout=proxybank.config.DEFAULT_TIMEOUT)
-        #alive = True
-        #status_code = r.status_code
+        start_time = time.time()
+
+        try:
+            # TODO: Support for other HTTP verbs
+            req = requests.get(url, headers=headers, proxies=proxy_dict, timeout=proxybank.config.DEFAULT_TIMEOUT)
+            alive = True
+            status_code = req.status_code
+
+        except ConnectionError as e:
+            logging.error(e)
+
+        except Timeout as e:
+            logging.error(e)
+
+        end_time = time.time()
+
+        record = AccessRecord(
+            proxy_id=self.id,
+            timestamp=datetime.now(),
+            alive=alive,
+            url=url,
+            access_time=end_time-start_time,
+            status_code=status_code)
+
+        db.session.add(record)
+        db.session.commit()
 
         return req
 
