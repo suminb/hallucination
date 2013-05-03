@@ -115,7 +115,18 @@ class Proxy(db.Model):
 
         return True
 
+    def fetch_url(self, url, headers=[], params=[]):
 
+        import requests
+        import proxybank
+
+        proxy_dict = {self.protocol: '%s:%d' % (self.host, self.port)}
+
+        req = requests.get(url, headers=headers, proxies=proxy_dict, timeout=proxybank.config.DEFAULT_TIMEOUT)
+        #alive = True
+        #status_code = r.status_code
+
+        return req
 
 class AccessRecord(db.Model):
     id = db.Column('ROWID', db.Integer, primary_key=True)

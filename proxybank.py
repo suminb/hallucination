@@ -126,4 +126,5 @@ def make_request(url, headers=[], params=[], timeout=config.DEFAULT_TIMEOUT):
     return r
 
 if __name__ == '__main__':
-    pass
+    r = make_request('http://news.naver.com/main/read.nhn?mode=LSD&mid=sec&sid1=100&oid=005&aid=0000552383')
+    print r.text
