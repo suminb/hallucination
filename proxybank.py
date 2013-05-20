@@ -1,9 +1,13 @@
 from sqlalchemy import MetaData
+from sqlalchemy.sql import func
 from core import app, db
 from models import *
 
 import logging
 
+logger = logging.getLogger('hallucination')
+logger.addHandler(logging.FileHandler('frontend.log')) 
+logger.setLevel(logging.INFO)
 
 def create_db():
     db.create_all()
@@ -33,6 +37,7 @@ def delete(id):
 
 
 def import_proxies(file_name):
+    """Imports a list of proxy servers from a text file."""
     import re
 
     with open(file_name) as f:
@@ -56,13 +61,17 @@ def import_proxies(file_name):
 
 
 def export_proxies():
+    """Exports the list of proxy servers to the standard output."""
     for row in Proxy.query.all():
         print '%s://%s:%d' % (row.protocol, row.host, row.port)
 
 
 def select(n):
     """Randomly selects ``n`` proxy records. If ``n`` is 1, it returns a single
-    object. It returns a list of objects otherwise."""
+    object. It returns a list of objects otherwise.
+
+    NOTE: Currently the value of ``n`` is being ignored.
+    """
 
     if n <= 0:
         raise Exception('n must be a positive integer.')
@@ -70,11 +79,19 @@ def select(n):
     if n > Proxy.query.count():
         raise Exception('Not enough proxy records.')
 
-    rows = Proxy.query.limit(n)
-    if n == 1:
-        return rows.first()
-    else:
-        return rows.all()
+    record = db.session \
+            .query(AccessRecord.proxy_id, func.avg(AccessRecord.access_time).label('avg_access_time')) \
+            .group_by(AccessRecord.proxy_id) \
+            .order_by('avg_access_time') \
+            .first()
+
+    return Proxy.query.get(record.proxy_id)
+
+    #rows = Proxy.query.limit(n)
+    # if n == 1:
+    #     return rows.first()
+    # else:
+    #     return rows.all()
 
 
 def report(id, status):
@@ -89,8 +106,9 @@ def make_request(url, headers=[], params=[], timeout=config.DEFAULT_TIMEOUT):
     import requests
     import time
 
-    #proxy_server = select(1)
-    proxy_server = get(1)
+    proxy_server = select(1)
+    #proxy_server = get(10)
+    logger.info('%s has been selected.' % proxy_server)
 
     proxy_dict = {'http': '%s:%d' % (proxy_server.host, proxy_server.port)}
 
@@ -126,5 +144,6 @@ def make_request(url, headers=[], params=[], timeout=config.DEFAULT_TIMEOUT):
     return r
 
 if __name__ == '__main__':
-    r = make_request('http://news.naver.com/main/read.nhn?mode=LSD&mid=sec&sid1=100&oid=005&aid=0000552383')
-    print r.text
+    #import_proxies('proxylist.txt')
+    r = make_request('http://www.cnn.com')
+    #print r.text
