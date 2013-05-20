@@ -55,8 +55,9 @@ def import_proxies(file_name):
                 try:
                     db.session.add(proxy)
                     db.session.commit()
+
                 except Exception as e:
-                    logging.error(e)
+                    logger.error(e)
                     db.session.rollback()
 
 
@@ -85,7 +86,11 @@ def select(n):
             .order_by('avg_access_time') \
             .first()
 
-    return Proxy.query.get(record.proxy_id)
+    if record != None:
+        return Proxy.query.get(record.proxy_id)
+    else:
+        # FIXME: What happens if there is no proxy record?
+        return Proxy.query.first()
 
     #rows = Proxy.query.limit(n)
     # if n == 1:
@@ -123,10 +128,10 @@ def make_request(url, headers=[], params=[], timeout=config.DEFAULT_TIMEOUT):
         status_code = r.status_code
 
     except ConnectionError as e:
-        logging.error(e)
+        logger.error(e)
 
     except Timeout as e:
-        logging.error(e)
+        logger.error(e)
 
     end_time = time.time()
 
@@ -145,5 +150,5 @@ def make_request(url, headers=[], params=[], timeout=config.DEFAULT_TIMEOUT):
 
 if __name__ == '__main__':
     #import_proxies('proxylist.txt')
-    r = make_request('http://www.cnn.com')
-    #print r.text
+    r = make_request('http://stackoverflow.com/questions/1052148/group-by-count-function-in-sqlalchemy')
+    print r.text
