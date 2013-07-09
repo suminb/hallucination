@@ -1,3 +1,6 @@
+__author__ = 'Sumin Byeon'
+__version__ = '0.1.1'
+
 from sqlalchemy import MetaData
 from sqlalchemy.sql import func
 from core import app, db
