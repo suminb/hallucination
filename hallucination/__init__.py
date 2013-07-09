@@ -7,10 +7,12 @@ from core import app, db
 from models import *
 
 import logging
+import os, sys
 
 logger = logging.getLogger('hallucination')
 logger.addHandler(logging.FileHandler('frontend.log')) 
 logger.setLevel(logging.INFO)
+
 
 def create_db():
     db.create_all()
@@ -64,10 +66,10 @@ def import_proxies(file_name):
                     db.session.rollback()
 
 
-def export_proxies():
+def export_proxies(out=sys.stdout):
     """Exports the list of proxy servers to the standard output."""
     for row in Proxy.query.all():
-        print '%s://%s:%d' % (row.protocol, row.host, row.port)
+        out.write('%s://%s:%d\n' % (row.protocol, row.host, row.port))
 
 
 def select(n):
@@ -150,8 +152,3 @@ def make_request(url, headers=[], params=[], timeout=config.DEFAULT_TIMEOUT):
     db.session.commit()
 
     return r
-
-if __name__ == '__main__':
-    #import_proxies('proxylist.txt')
-    r = make_request('http://stackoverflow.com/questions/1052148/group-by-count-function-in-sqlalchemy')
-    print r.text
