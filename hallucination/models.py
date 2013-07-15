@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, MetaData
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 #from sqlalchemy.dialects.postgresql import UUID
@@ -43,6 +43,8 @@ class Proxy(Base):
 
     __tablename__ = 'proxy'
     __table_args__ = (UniqueConstraint('protocol', 'host', 'port'),)
+
+    __metadata__ = MetaData()
 
     id = Column('ROWID', Integer, primary_key=True)
     protocol = Column(String(8))
@@ -160,8 +162,11 @@ class Proxy(Base):
 
         return req
 
+
 class AccessRecord(Base):
     __tablename__ = 'access_record'
+
+    __metadata__ = MetaData()
 
     id = Column('ROWID', Integer, primary_key=True)
     proxy_id = Column(Integer)

@@ -13,7 +13,7 @@ logger.setLevel(logging.INFO)
 config = {}
 
 # FIXME: This is not a good design
-url = 'http://translator.suminb.com'
+url = 'http://translate.google.com'
 proxy_factory = None
 
 
@@ -35,6 +35,10 @@ def testrun():
     pool.map(testrun_worker, proxy_factory.session.query(Proxy).all())
 
 
+def create():
+    proxy_factory.create_db()
+
+
 def _import(params):
     """Imports a list of proxy servers from a text file."""
     proxy_factory.import_proxies(params)
@@ -50,12 +54,14 @@ def select():
 
 
 def main():
-    opts, args = getopt.getopt(sys.argv[1:], 'ti:x:sd:')
+    opts, args = getopt.getopt(sys.argv[1:], 'cti:x:sd:')
 
     rf = None
     params = []
     for o, a in opts:
-        if o == '-t':
+        if o == '-c':
+            rf = create
+        elif o == '-t':
             rf = testrun
         elif o == '-i':
             rf = _import

@@ -1,10 +1,11 @@
 __author__ = 'Sumin Byeon'
 __email__ = 'suminb@gmail.com'
-__version__ = '0.2.2'
+__version__ = '0.2.3'
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql.expression import func, select
 from sqlalchemy.orm import sessionmaker, aliased
+from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from models import *
 from datetime import datetime, timedelta
 
@@ -16,9 +17,6 @@ import requests
 class ProxyFactory:
 
     def __init__(self, config={}, logger=logging.getLogger('hallucination')):
-        if not 'default_timeout' in config:
-            config['default_timeout'] = 5
-
         self.config = config
         self.logger = logger
 
@@ -28,8 +26,9 @@ class ProxyFactory:
         Session = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
         self.session = Session()
 
-    def create_db():
-        db.create_all()
+    def create_db(self):
+        # Base class is from models module
+        Base.metadata.create_all(self.engine)
 
 
     def get(id):
@@ -126,7 +125,7 @@ class ProxyFactory:
         pass
 
 
-    def make_request(self, url, headers=[], params=[], timeout=0, req_type=requests.get, proxy=None):
+    def make_request(self, url, headers=[], params=[], timeout=5, req_type=requests.get, proxy=None):
         """Fetches a URL via a automatically selected proxy server, then reports the status."""
 
         from datetime import datetime
@@ -144,8 +143,8 @@ class ProxyFactory:
         alive = False
         status_code = None
         try:
-            if timeout == 0:
-                timeout = self.config['default_timeout']
+            if 'timeout' in self.config:
+                timeout = self.config['timeout']
 
             # TODO: Support for other HTTP verbs
             #r = requests.get(url, headers=headers, proxies=proxy_dict, timeout=timeout)
@@ -166,7 +165,7 @@ class ProxyFactory:
 
             record = AccessRecord(
                 proxy_id=proxy.id,
-                timestamp=datetime.now(),
+                timestamp=datetime.utcnow(),
                 alive=alive,
                 url=url,
                 access_time=end_time-start_time,
