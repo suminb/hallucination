@@ -1,11 +1,12 @@
 __author__ = 'Sumin Byeon'
 __email__ = 'suminb@gmail.com'
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql.expression import func, select
 from sqlalchemy.orm import sessionmaker, aliased
 from models import *
+from datetime import datetime, timedelta
 
 import logging
 import os, sys
@@ -19,7 +20,7 @@ class ProxyFactory:
 
     def __init__(self, config={}):
         if not 'default_timeout' in config:
-            config['default_timeout'] = 8
+            config['default_timeout'] = 6
 
         self.config = config
 
@@ -102,12 +103,16 @@ class ProxyFactory:
 
         statement = '''
         SELECT * FROM (
-            SELECT *, avg(access_time) AS avg_access_time, sum(status_code) AS sumsc, count(*) AS cnt FROM access_record GROUP BY proxy_id
+            SELECT *, avg(access_time) AS avg_access_time, sum(status_code) AS sumsc, count(*) AS cnt FROM (
+                    SELECT * FROM access_record WHERE timestamp > :timestamp
+                ) GROUP BY proxy_id
         ) WHERE sumsc/cnt = 200 ORDER BY RANDOM()
         '''
 
+        timestamp = datetime.now() - timedelta(hours=1)
+
         record = self.session.query(AccessRecord, 'proxy_id', 'avg_access_time').from_statement( \
-            statement).first()
+            statement).params(timestamp=timestamp).first()
 
         if record != None:
             return self.session.query(Proxy).filter_by(id=record.proxy_id).first()
