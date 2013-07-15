@@ -20,7 +20,7 @@ class ProxyFactory:
 
     def __init__(self, config={}):
         if not 'default_timeout' in config:
-            config['default_timeout'] = 6
+            config['default_timeout'] = 5
 
         self.config = config
 

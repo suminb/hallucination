@@ -10,9 +10,11 @@ logger = logging.getLogger('hallucination')
 logger.addHandler(logging.StreamHandler(sys.stdout))
 logger.setLevel(logging.INFO)
 
+config = {}
+
 # FIXME: This is not a good design
 url = 'http://translator.suminb.com'
-proxy_factory = ProxyFactory(config=dict(db_uri='sqlite:///../../app/test.db'))
+proxy_factory = None
 
 
 def testrun_request(proxy):
@@ -48,7 +50,7 @@ def select():
 
 
 def main():
-    opts, args = getopt.getopt(sys.argv[1:], 'ti:x:s')
+    opts, args = getopt.getopt(sys.argv[1:], 'ti:x:sd:')
 
     rf = None
     params = []
@@ -63,8 +65,13 @@ def main():
         elif o == '-s':
             rf = select
 
+        elif o == '-d':
+            config['db_uri'] = 'sqlite:///%s' % a
+
+            global proxy_factory
+            proxy_factory = ProxyFactory(config=dict(db_uri=config['db_uri']))
+
     if rf != None:
-        #proxy_factory = ProxyFactory(config=dict(db_uri='sqlite:///test.db'))
         rf(*params)
     else:
         raise Exception('Runtime mode is not specified.')
