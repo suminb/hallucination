@@ -1,5 +1,5 @@
-from __init__ import ProxyFactory
-from models import Proxy
+from hallucination import ProxyFactory
+from hallucination.models import Proxy
 from multiprocessing import Pool
 
 import getopt
