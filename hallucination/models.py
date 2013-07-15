@@ -1,10 +1,13 @@
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime
 from sqlalchemy.schema import UniqueConstraint
-from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 #from sqlalchemy.dialects.postgresql import UUID
-from core import app, db
+#from core import app, db
 
 import logging
 import config
+
+Base = declarative_base()
 
 
 def serialize(obj):
@@ -23,7 +26,7 @@ def serialize(obj):
         return fields
 
 
-class Proxy(db.Model):
+class Proxy(Base):
     """
     In SQLite, every row of every table has an 64-bit signed integer ROWID.
     The ROWID for each row is unique among all rows in the same table.
@@ -37,16 +40,17 @@ class Proxy(db.Model):
 
     """
 
+    __tablename__ = 'proxy'
     __table_args__ = (UniqueConstraint('protocol', 'host', 'port'),)
 
-    id = db.Column('ROWID', db.Integer, primary_key=True)
-    protocol = db.Column(db.String(8))
-    host = db.Column(db.String(255))
-    port = db.Column(db.Integer)
+    id = Column('ROWID', Integer, primary_key=True)
+    protocol = Column(String(8))
+    host = Column(String(255))
+    port = Column(Integer)
 
-    hit_ratio = db.Column(db.Float(precision=64)) # aggregated value
-    access_time = db.Column(db.Float(precision=64)) # aggregated average value
-    last_updated = db.Column(db.DateTime(timezone=True)) # aggregated average value
+    hit_ratio = Column(Float(precision=64)) # aggregated value
+    access_time = Column(Float(precision=64)) # aggregated average value
+    last_updated = Column(DateTime(timezone=True)) # aggregated average value
 
     def __repr__(self):
         return 'Proxy %s://%s:%d' % (self.protocol, self.host, self.port)
@@ -155,18 +159,20 @@ class Proxy(db.Model):
 
         return req
 
-class AccessRecord(db.Model):
-    id = db.Column('ROWID', db.Integer, primary_key=True)
-    proxy_id = db.Column(db.Integer)
-    timestamp = db.Column(db.DateTime(timezone=True))
+class AccessRecord(Base):
+    __tablename__ = 'access_record'
 
-    user_agent = db.Column(db.String(255))
-    remote_address = db.Column(db.String(64))
+    id = Column('ROWID', Integer, primary_key=True)
+    proxy_id = Column(Integer)
+    timestamp = Column(DateTime(timezone=True))
+
+    user_agent = Column(String(255))
+    remote_address = Column(String(64))
     
-    alive = db.Column(db.Boolean)
-    url = db.Column(db.String(255))
-    status_code = db.Column(db.Integer)
-    access_time = db.Column(db.Float(precision=64))
+    alive = Column(Boolean)
+    url = Column(String(255))
+    status_code = Column(Integer)
+    access_time = Column(Float(precision=64))
 
     def serialize(self):
         return serialize(self)

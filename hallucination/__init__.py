@@ -1,154 +1,171 @@
 __author__ = 'Sumin Byeon'
-__version__ = '0.1.1'
+__version__ = '0.2.0'
 
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql import func
-from core import app, db
+from sqlalchemy.orm import sessionmaker
 from models import *
 
 import logging
 import os, sys
+import requests
 
 logger = logging.getLogger('hallucination')
 logger.addHandler(logging.FileHandler('frontend.log')) 
 logger.setLevel(logging.INFO)
 
+class Hallucination:
 
-def create_db():
-    db.create_all()
+    def __init__(self, config={}):
+        if not 'default_timeout' in config:
+            config['default_timeout'] = 10
 
+        self.config = config
 
-def get(id):
-    return Proxy.query.get(id)
+        self.engine = create_engine(config['db_uri'])
+        self.db = self.engine.connect()
 
+        Session = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+        self.session = Session()
 
-def insert(protocol, host, port):
-    """Inserts a proxy record into the database. Returns an ID of the newly created object."""
-
-    p = Proxy(protocol=protocol, host=host, port=port)
-
-    db.session.add(p)
-    db.session.commit()
-
-    return p.id
+    def create_db():
+        db.create_all()
 
 
-def update(id, **pairs):
-    pass
+    def get(id):
+        return Proxy.query.get(id)
 
 
-def delete(id):
-    pass
+    def insert(protocol, host, port):
+        """Inserts a proxy record into the database. Returns an ID of the newly created object."""
+
+        p = Proxy(protocol=protocol, host=host, port=port)
+
+        self.session.add(p)
+        self.session.commit()
+
+        return p.id
 
 
-def import_proxies(file_name):
-    """Imports a list of proxy servers from a text file."""
-    import re
-
-    with open(file_name) as f:
-        for line in f.readlines():
-            # FIXME: This is an incomplete pattern matching
-            match = re.match(r'(\w+)://([a-zA-Z0-9_.]+):(\d+)', line)
-
-            if match != None:
-                protocol, host, port = match.group(1), match.group(2), int(match.group(3))
-
-                logging.info('Insert: %s' % line)
-
-                proxy = Proxy(protocol=protocol, host=host, port=port)
-
-                try:
-                    db.session.add(proxy)
-                    db.session.commit()
-
-                except Exception as e:
-                    logger.error(e)
-                    db.session.rollback()
+    def update(id, **pairs):
+        pass
 
 
-def export_proxies(out=sys.stdout):
-    """Exports the list of proxy servers to the standard output."""
-    for row in Proxy.query.all():
-        out.write('%s://%s:%d\n' % (row.protocol, row.host, row.port))
+    def delete(id):
+        pass
 
 
-def select(n):
-    """Randomly selects ``n`` proxy records. If ``n`` is 1, it returns a single
-    object. It returns a list of objects otherwise.
+    def import_proxies(self, file_name):
+        """Imports a list of proxy servers from a text file."""
+        import re
 
-    NOTE: Currently the value of ``n`` is being ignored.
-    """
+        with open(file_name) as f:
+            for line in f.readlines():
+                # FIXME: This is an incomplete pattern matching
+                match = re.match(r'(\w+)://([a-zA-Z0-9_.]+):(\d+)', line)
 
-    if n <= 0:
-        raise Exception('n must be a positive integer.')
+                if match != None:
+                    protocol, host, port = match.group(1), match.group(2), int(match.group(3))
 
-    if n > Proxy.query.count():
-        raise Exception('Not enough proxy records.')
+                    logging.info('Insert: %s' % line)
 
-    record = db.session \
-            .query(AccessRecord.proxy_id, func.avg(AccessRecord.access_time).label('avg_access_time')) \
-            .group_by(AccessRecord.proxy_id) \
-            .order_by('avg_access_time') \
-            .first()
+                    proxy = Proxy(protocol=protocol, host=host, port=port)
 
-    if record != None:
-        return Proxy.query.get(record.proxy_id)
-    else:
-        # FIXME: What happens if there is no proxy record?
-        return Proxy.query.first()
+                    try:
+                        self.session.add(proxy)
+                        self.session.commit()
 
-    #rows = Proxy.query.limit(n)
-    # if n == 1:
-    #     return rows.first()
-    # else:
-    #     return rows.all()
+                    except Exception as e:
+                        logger.error(e)
+                        self.session.rollback()
 
 
-def report(id, status):
-    pass
+    def export_proxies(out=sys.stdout):
+        """Exports the list of proxy servers to the standard output."""
+        for row in Proxy.query.all():
+            out.write('%s://%s:%d\n' % (row.protocol, row.host, row.port))
 
 
-def make_request(url, headers=[], params=[], timeout=config.DEFAULT_TIMEOUT):
-    """Fetches a URL via a automatically selected proxy server, then reports the status."""
+    def select(self, n):
+        """Randomly selects ``n`` proxy records. If ``n`` is 1, it returns a single
+        object. It returns a list of objects otherwise.
 
-    from datetime import datetime
-    from requests.exceptions import ConnectionError, Timeout
-    import requests
-    import time
+        NOTE: Currently the value of ``n`` is being ignored.
+        """
 
-    proxy_server = select(1)
-    #proxy_server = get(10)
-    logger.info('%s has been selected.' % proxy_server)
+        if n <= 0:
+            raise Exception('n must be a positive integer.')
 
-    proxy_dict = {'http': '%s:%d' % (proxy_server.host, proxy_server.port)}
+        if n > self.session.query(Proxy).count():
+            raise Exception('Not enough proxy records.')
 
-    start_time = time.time()
+        record = self.session \
+                .query(AccessRecord.proxy_id, func.avg(AccessRecord.access_time).label('avg_access_time')) \
+                .group_by(AccessRecord.proxy_id) \
+                .order_by('avg_access_time') \
+                .first()
 
-    alive = False
-    status_code = None
-    try:
-        # TODO: Support for other HTTP verbs
-        r = requests.get(url, headers=headers, proxies=proxy_dict, timeout=timeout)
-        alive = True
-        status_code = r.status_code
+        if record != None:
+            return self.session.query(Proxy).get(record.proxy_id)
+        else:
+            # FIXME: What happens if there is no proxy record?
+            return Proxy.query.first()
 
-    except ConnectionError as e:
-        logger.error(e)
+        #rows = Proxy.query.limit(n)
+        # if n == 1:
+        #     return rows.first()
+        # else:
+        #     return rows.all()
 
-    except Timeout as e:
-        logger.error(e)
 
-    end_time = time.time()
+    def report(self, id, status):
+        pass
 
-    record = AccessRecord(
-        proxy_id=proxy_server.id,
-        timestamp=datetime.now(),
-        alive=alive,
-        url=url,
-        access_time=end_time-start_time,
-        status_code=status_code)
 
-    db.session.add(record)
-    db.session.commit()
+    def make_request(self, url, headers=[], params=[], timeout=0, req_type=requests.get):
+        """Fetches a URL via a automatically selected proxy server, then reports the status."""
 
-    return r
+        from datetime import datetime
+        from requests.exceptions import ConnectionError, Timeout
+        import time
+
+        proxy_server = self.select(1)
+        #proxy_server = get(10)
+        logger.info('%s has been selected.' % proxy_server)
+
+        proxy_dict = {'http': '%s:%d' % (proxy_server.host, proxy_server.port)}
+
+        start_time = time.time()
+
+        alive = False
+        status_code = None
+        try:
+            if timeout == 0:
+                timeout = self.config['default_timeout']
+
+            # TODO: Support for other HTTP verbs
+            #r = requests.get(url, headers=headers, proxies=proxy_dict, timeout=timeout)
+            r = req_type(url, headers=headers, data=params, proxies=proxy_dict, timeout=timeout)
+            alive = True
+            status_code = r.status_code
+
+        except ConnectionError as e:
+            logger.error(e)
+
+        except Timeout as e:
+            logger.error(e)
+
+        end_time = time.time()
+
+        record = AccessRecord(
+            proxy_id=proxy_server.id,
+            timestamp=datetime.now(),
+            alive=alive,
+            url=url,
+            access_time=end_time-start_time,
+            status_code=status_code)
+
+        self.session.add(record)
+        self.session.commit()
+
+        return r
