@@ -14,7 +14,7 @@ logger = logging.getLogger('hallucination')
 logger.addHandler(logging.FileHandler('frontend.log')) 
 logger.setLevel(logging.INFO)
 
-class Hallucination:
+class ProxyFactory:
 
     def __init__(self, config={}):
         if not 'default_timeout' in config:
@@ -118,18 +118,18 @@ class Hallucination:
         pass
 
 
-    def make_request(self, url, headers=[], params=[], timeout=0, req_type=requests.get):
+    def make_request(self, url, headers=[], params=[], timeout=0, req_type=requests.get, proxy=None):
         """Fetches a URL via a automatically selected proxy server, then reports the status."""
 
         from datetime import datetime
         from requests.exceptions import ConnectionError, Timeout
         import time
 
-        proxy_server = self.select(1)
-        #proxy_server = get(10)
-        logger.info('%s has been selected.' % proxy_server)
+        if proxy == None:
+            proxy = self.select(1)
+            logger.info('No proxy is given. %s has been selected.' % proxy)
 
-        proxy_dict = {'http': '%s:%d' % (proxy_server.host, proxy_server.port)}
+        proxy_dict = {'http': '%s:%d' % (proxy.host, proxy.port)}
 
         start_time = time.time()
         r = None
@@ -157,7 +157,7 @@ class Hallucination:
             end_time = time.time()
 
             record = AccessRecord(
-                proxy_id=proxy_server.id,
+                proxy_id=proxy.id,
                 timestamp=datetime.now(),
                 alive=alive,
                 url=url,
