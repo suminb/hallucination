@@ -1,4 +1,5 @@
 __author__ = 'Sumin Byeon'
+__email__ = 'suminb@gmail.com'
 __version__ = '0.2.0'
 
 from sqlalchemy import MetaData, create_engine
