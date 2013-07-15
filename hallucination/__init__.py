@@ -132,8 +132,9 @@ class Hallucination:
         proxy_dict = {'http': '%s:%d' % (proxy_server.host, proxy_server.port)}
 
         start_time = time.time()
-
+        r = None
         alive = False
+        status_code = None
         try:
             if timeout == 0:
                 timeout = self.config['default_timeout']
@@ -142,8 +143,17 @@ class Hallucination:
             #r = requests.get(url, headers=headers, proxies=proxy_dict, timeout=timeout)
             r = req_type(url, headers=headers, data=params, proxies=proxy_dict, timeout=timeout)
             alive = True
-            status_code = r.status_code if r != None else 0
+            status_code = r.status_code
 
+        except ConnectionError as e:
+            logger.error(e)
+            raise e
+
+        except Timeout as e:
+            logger.error(e)
+            raise e
+
+        finally:
             end_time = time.time()
 
             record = AccessRecord(
@@ -154,20 +164,11 @@ class Hallucination:
                 access_time=end_time-start_time,
                 status_code=status_code)
 
-            logger.info('Access record: %s' % record)
+            logger.info('Inserting access record: %s' % record)
 
             self.session.add(record)
             self.session.commit()
 
-            logger.debug('Response body: %s' % r.text)
+            if r != None: logger.debug('Response body: %s' % r.text)
 
-            return r
-
-        except ConnectionError as e:
-            logger.error(e)
-            raise e
-
-        except Timeout as e:
-            logger.error(e)
-            raise e
-
+        return r
