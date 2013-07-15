@@ -5,7 +5,8 @@ from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 #from core import app, db
 
 import logging
-import config
+
+DEFAULT_TIMEOUT = 5
 
 Base = declarative_base()
 
@@ -58,7 +59,7 @@ class Proxy(Base):
     def serialize(self):
         return serialize(self)
 
-    def test_reference_page(self, timeout=config.DEFAULT_TIMEOUT):
+    def test_reference_page(self, timeout=DEFAULT_TIMEOUT):
         """Tests if the proxy server returns an HTTP 200 message and a correct content
         when trying to access a reference page."""
 
@@ -80,7 +81,7 @@ class Proxy(Base):
 
         return False
 
-    def test_nonexisting_page(self, timeout=config.DEFAULT_TIMEOUT):
+    def test_nonexisting_page(self, timeout=DEFAULT_TIMEOUT):
         """Tests if the proxy server returns an HTTP 404 message when trying to access a
         non-existing page."""
 
@@ -100,7 +101,7 @@ class Proxy(Base):
 
         return False
 
-    def test_nonexisting_domain(self, timeout=config.DEFAULT_TIMEOUT):
+    def test_nonexisting_domain(self, timeout=DEFAULT_TIMEOUT):
         """Tests if the proxy server times-out when trying to access a non-existing domain."""
 
         import requests
@@ -134,7 +135,7 @@ class Proxy(Base):
 
         try:
             # TODO: Support for other HTTP verbs
-            req = requests.get(url, headers=headers, proxies=proxy_dict, timeout=proxybank.config.DEFAULT_TIMEOUT)
+            req = requests.get(url, headers=headers, proxies=proxy_dict, timeout=DEFAULT_TIMEOUT)
             alive = True
             status_code = req.status_code
 
