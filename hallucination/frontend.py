@@ -12,7 +12,7 @@ logger.setLevel(logging.INFO)
 
 # FIXME: This is not a good design
 url = 'http://translator.suminb.com'
-proxy_factory = ProxyFactory(config=dict(db_uri='sqlite:///test.db'))
+proxy_factory = ProxyFactory(config=dict(db_uri='sqlite:///../../app/test.db'))
 
 
 def testrun_request(proxy):
@@ -28,14 +28,14 @@ def testrun_worker(proxy):
     except Exception as e:
         logger.error(str(e))
 
-def testrun(proxy_factory):
+def testrun():
     pool = Pool(processes=8)
     pool.map(testrun_worker, proxy_factory.session.query(Proxy).all())
 
 
-def _import():
+def _import(params):
     """Imports a list of proxy servers from a text file."""
-    pass
+    proxy_factory.import_proxies(params)
 
 
 def export():
@@ -48,14 +48,16 @@ def select():
 
 
 def main():
-    opts, args = getopt.getopt(sys.argv[1:], 'tixs')
+    opts, args = getopt.getopt(sys.argv[1:], 'ti:x:s')
 
     rf = None
+    params = []
     for o, a in opts:
         if o == '-t':
             rf = testrun
         elif o == '-i':
             rf = _import
+            params = [a]
         elif o == '-x':
             rf = export
         elif o == '-s':
@@ -63,7 +65,7 @@ def main():
 
     if rf != None:
         #proxy_factory = ProxyFactory(config=dict(db_uri='sqlite:///test.db'))
-        rf()
+        rf(*params)
     else:
         raise Exception('Runtime mode is not specified.')
 
