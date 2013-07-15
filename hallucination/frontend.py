@@ -1,5 +1,6 @@
 from __init__ import ProxyFactory
 from models import Proxy
+from multiprocessing import Pool
 
 import getopt
 import os, sys
@@ -9,15 +10,27 @@ logger = logging.getLogger('hallucination')
 logger.addHandler(logging.StreamHandler(sys.stdout))
 logger.setLevel(logging.INFO)
 
+# FIXME: This is not a good design
+url = 'http://translator.suminb.com'
+proxy_factory = ProxyFactory(config=dict(db_uri='sqlite:///test.db'))
+
+
+def testrun_request(proxy):
+    # NOTE: For some reason, testrun_worker has problems of calling class-level
+    # functions. It will produce an error message like following:
+    # PicklingError: Can't pickle <type 'function'>: attribute lookup __builtin__.function failed
+    proxy_factory.make_request(url, proxy=proxy)
+
+def testrun_worker(proxy):
+    try:
+        logger.info('Test run: Fetching %s via %s' % (url, proxy))
+        testrun_request(proxy)
+    except Exception as e:
+        logger.error(str(e))
 
 def testrun(proxy_factory):
-    url = 'http://translator.suminb.com'
-    for row in proxy_factory.session.query(Proxy).all():
-        try:
-            logger.info('Test run: Fetching %s via %s' % (url, row))
-            r = proxy_factory.make_request(url, proxy=row)
-        except Exception as e:
-            logger.error(str(e))
+    pool = Pool(processes=8)
+    pool.map(testrun_worker, proxy_factory.session.query(Proxy).all())
 
 
 def _import():
@@ -43,8 +56,8 @@ def main():
             rf = export
 
     if rf != None:
-        factory = ProxyFactory(config=dict(db_uri='sqlite:///test.db'))
-        rf(factory)
+        #proxy_factory = ProxyFactory(config=dict(db_uri='sqlite:///test.db'))
+        rf(proxy_factory)
     else:
         raise Exception('Runtime mode is not specified.')
 
