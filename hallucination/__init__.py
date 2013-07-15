@@ -2,7 +2,7 @@ __author__ = 'Sumin Byeon'
 __version__ = '0.2.0'
 
 from sqlalchemy import MetaData, create_engine
-from sqlalchemy.sql import func
+from sqlalchemy.sql.expression import func, select
 from sqlalchemy.orm import sessionmaker
 from models import *
 
@@ -18,7 +18,7 @@ class Hallucination:
 
     def __init__(self, config={}):
         if not 'default_timeout' in config:
-            config['default_timeout'] = 10
+            config['default_timeout'] = 8
 
         self.config = config
 
@@ -67,7 +67,7 @@ class Hallucination:
                 if match != None:
                     protocol, host, port = match.group(1), match.group(2), int(match.group(3))
 
-                    logging.info('Insert: %s' % line)
+                    logger.info('Insert: %s' % line)
 
                     proxy = Proxy(protocol=protocol, host=host, port=port)
 
@@ -105,17 +105,13 @@ class Hallucination:
                 .order_by('avg_access_time') \
                 .first()
 
-        if record != None:
-            return self.session.query(Proxy).get(record.proxy_id)
-        else:
-            # FIXME: What happens if there is no proxy record?
-            return Proxy.query.first()
-
-        #rows = Proxy.query.limit(n)
-        # if n == 1:
-        #     return rows.first()
+        # if record != None:
+        #     logger.info('Access record found.')
+        #     return self.session.query(Proxy).get(record.proxy_id)
         # else:
-        #     return rows.all()
+        #     # FIXME: What happens if there is no proxy record?
+        #     logger.info('No access record found.')
+        return self.session.query(Proxy).order_by(func.random()).first()
 
 
     def report(self, id, status):
@@ -138,7 +134,6 @@ class Hallucination:
         start_time = time.time()
 
         alive = False
-        status_code = None
         try:
             if timeout == 0:
                 timeout = self.config['default_timeout']
@@ -147,25 +142,32 @@ class Hallucination:
             #r = requests.get(url, headers=headers, proxies=proxy_dict, timeout=timeout)
             r = req_type(url, headers=headers, data=params, proxies=proxy_dict, timeout=timeout)
             alive = True
-            status_code = r.status_code
+            status_code = r.status_code if r != None else 0
+
+            end_time = time.time()
+
+            record = AccessRecord(
+                proxy_id=proxy_server.id,
+                timestamp=datetime.now(),
+                alive=alive,
+                url=url,
+                access_time=end_time-start_time,
+                status_code=status_code)
+
+            logger.info('Access record: %s' % record)
+
+            self.session.add(record)
+            self.session.commit()
+
+            logger.debug('Response body: %s' % r.text)
+
+            return r
 
         except ConnectionError as e:
             logger.error(e)
+            raise e
 
         except Timeout as e:
             logger.error(e)
+            raise e
 
-        end_time = time.time()
-
-        record = AccessRecord(
-            proxy_id=proxy_server.id,
-            timestamp=datetime.now(),
-            alive=alive,
-            url=url,
-            access_time=end_time-start_time,
-            status_code=status_code)
-
-        self.session.add(record)
-        self.session.commit()
-
-        return r
