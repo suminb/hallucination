@@ -43,8 +43,12 @@ def export():
     pass
 
 
+def select():
+    print proxy_factory.select(1)
+
+
 def main():
-    opts, args = getopt.getopt(sys.argv[1:], 'tix')
+    opts, args = getopt.getopt(sys.argv[1:], 'tixs')
 
     rf = None
     for o, a in opts:
@@ -54,10 +58,12 @@ def main():
             rf = _import
         elif o == '-x':
             rf = export
+        elif o == '-s':
+            rf = select
 
     if rf != None:
         #proxy_factory = ProxyFactory(config=dict(db_uri='sqlite:///test.db'))
-        rf(proxy_factory)
+        rf()
     else:
         raise Exception('Runtime mode is not specified.')
 

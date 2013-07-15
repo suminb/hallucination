@@ -3,7 +3,7 @@ __version__ = '0.2.0'
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql.expression import func, select
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, aliased
 from models import *
 
 import logging
@@ -96,22 +96,14 @@ class ProxyFactory:
         if n <= 0:
             raise Exception('n must be a positive integer.')
 
-        if n > self.session.query(Proxy).count():
+        if n > self.session.query(AccessRecord).count():
             raise Exception('Not enough proxy records.')
 
-        record = self.session \
-                .query(AccessRecord.proxy_id, func.avg(AccessRecord.access_time).label('avg_access_time')) \
-                .group_by(AccessRecord.proxy_id) \
-                .order_by('avg_access_time') \
-                .first()
+        record = self.session.query(AccessRecord, 'proxy_id', 'avg_access_time').from_statement(
+            'SELECT *, AVG(access_time) AS avg_access_time FROM (SELECT * FROM access_record WHERE status_code=:status_code) GROUP BY proxy_id ORDER BY RANDOM()'). \
+            params(status_code=200).first()
 
-        # if record != None:
-        #     logger.info('Access record found.')
-        #     return self.session.query(Proxy).get(record.proxy_id)
-        # else:
-        #     # FIXME: What happens if there is no proxy record?
-        #     logger.info('No access record found.')
-        return self.session.query(Proxy).order_by(func.random()).first()
+        return self.session.query(Proxy).filter_by(id=record.proxy_id).first()
 
 
     def report(self, id, status):
