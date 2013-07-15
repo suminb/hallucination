@@ -111,7 +111,7 @@ class ProxyFactory:
         ) WHERE sumsc/cnt = 200 ORDER BY RANDOM()
         '''
 
-        timestamp = datetime.now() - timedelta(hours=1)
+        timestamp = datetime.utcnow() - timedelta(hours=1)
 
         record = self.session.query(AccessRecord, 'proxy_id', 'avg_access_time').from_statement( \
             statement).params(timestamp=timestamp).first()
