@@ -99,11 +99,19 @@ class ProxyFactory:
         if n > self.session.query(AccessRecord).count():
             raise Exception('Not enough proxy records.')
 
-        record = self.session.query(AccessRecord, 'proxy_id', 'avg_access_time').from_statement(
-            'SELECT *, AVG(access_time) AS avg_access_time FROM (SELECT * FROM access_record WHERE status_code=:status_code) GROUP BY proxy_id ORDER BY RANDOM()'). \
-            params(status_code=200).first()
+        statement = '''
+        SELECT * FROM (
+            SELECT *, avg(access_time) AS avg_access_time, sum(status_code) AS sumsc, count(*) AS cnt FROM access_record GROUP BY proxy_id
+        ) WHERE sumsc/cnt = 200 ORDER BY RANDOM()
+        '''
 
-        return self.session.query(Proxy).filter_by(id=record.proxy_id).first()
+        record = self.session.query(AccessRecord, 'proxy_id', 'avg_access_time').from_statement( \
+            statement).first()
+
+        if record != None:
+            return self.session.query(Proxy).filter_by(id=record.proxy_id).first()
+        else:
+            raise Exception('No available proxy found.')
 
 
     def report(self, id, status):

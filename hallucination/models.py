@@ -53,7 +53,7 @@ class Proxy(Base):
     last_updated = Column(DateTime(timezone=True)) # aggregated average value
 
     def __repr__(self):
-        return 'Proxy %s://%s:%d' % (self.protocol, self.host, self.port)
+        return 'Proxy (id=%d) %s://%s:%d' % (self.id, self.protocol, self.host, self.port)
 
     def serialize(self):
         return serialize(self)
