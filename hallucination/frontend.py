@@ -69,7 +69,10 @@ def main():
             config['db_uri'] = 'sqlite:///%s' % a
 
             global proxy_factory
-            proxy_factory = ProxyFactory(config=dict(db_uri=config['db_uri']))
+            proxy_factory = ProxyFactory(config=dict(
+                db_uri=config['db_uri']),
+                logger=logger
+            )
 
     if rf != None:
         rf(*params)

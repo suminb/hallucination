@@ -1,6 +1,6 @@
 __author__ = 'Sumin Byeon'
 __email__ = 'suminb@gmail.com'
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql.expression import func, select
@@ -12,17 +12,15 @@ import logging
 import os, sys
 import requests
 
-logger = logging.getLogger('hallucination')
-logger.addHandler(logging.FileHandler('frontend.log')) 
-logger.setLevel(logging.INFO)
 
 class ProxyFactory:
 
-    def __init__(self, config={}):
+    def __init__(self, config={}, logger=logging.getLogger('hallucination')):
         if not 'default_timeout' in config:
             config['default_timeout'] = 5
 
         self.config = config
+        self.logger = logger
 
         self.engine = create_engine(config['db_uri'])
         self.db = self.engine.connect()
@@ -62,14 +60,18 @@ class ProxyFactory:
         import re
 
         with open(file_name) as f:
+            
+            statinfo = os.stat(file_name)
+            self.logger.info('Importing proxy servers from %s (%d bytes)' \
+                % (file_name, statinfo.st_size))
+
             for line in f.readlines():
-                # FIXME: This is an incomplete pattern matching
-                match = re.match(r'(\w+)://([a-zA-Z0-9_.]+):(\d+)', line)
+                match = re.search(r'(\w+)://([a-zA-Z0-9_.]+):(\d+)', line)
 
                 if match != None:
                     protocol, host, port = match.group(1), match.group(2), int(match.group(3))
 
-                    logger.info('Insert: %s' % line)
+                    self.logger.info('Insert: %s://%s:%d' % (protocol, host, port))
 
                     proxy = Proxy(protocol=protocol, host=host, port=port)
 
@@ -78,7 +80,7 @@ class ProxyFactory:
                         self.session.commit()
 
                     except Exception as e:
-                        logger.error(e)
+                        self.logger.error(e)
                         self.session.rollback()
 
 
@@ -133,7 +135,7 @@ class ProxyFactory:
 
         if proxy == None:
             proxy = self.select(1)
-            logger.info('No proxy is given. %s has been selected.' % proxy)
+            self.logger.info('No proxy is given. %s has been selected.' % proxy)
 
         proxy_dict = {'http': '%s:%d' % (proxy.host, proxy.port)}
 
@@ -152,11 +154,11 @@ class ProxyFactory:
             status_code = r.status_code
 
         except ConnectionError as e:
-            logger.error(e)
+            self.logger.error(e)
             raise e
 
         except Timeout as e:
-            logger.error(e)
+            self.logger.error(e)
             raise e
 
         finally:
@@ -170,11 +172,11 @@ class ProxyFactory:
                 access_time=end_time-start_time,
                 status_code=status_code)
 
-            logger.info('Inserting access record: %s' % record)
+            self.logger.info('Inserting access record: %s' % record)
 
             self.session.add(record)
             self.session.commit()
 
-            if r != None: logger.debug('Response body: %s' % r.text)
+            if r != None: self.logger.debug('Response body: %s' % r.text)
 
         return r
