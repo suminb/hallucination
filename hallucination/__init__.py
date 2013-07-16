@@ -1,6 +1,6 @@
 __author__ = 'Sumin Byeon'
 __email__ = 'suminb@gmail.com'
-__version__ = '0.2.4'
+__version__ = '0.2.5'
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql.expression import func, select
@@ -54,33 +54,29 @@ class ProxyFactory:
         pass
 
 
-    def import_proxies(self, file_name):
+    def import_proxies(self, fin=sys.stdin):
         """Imports a list of proxy servers from a text file."""
         import re
-
-        with open(file_name) as f:
             
-            statinfo = os.stat(file_name)
-            self.logger.info('Importing proxy servers from %s (%d bytes)' \
-                % (file_name, statinfo.st_size))
+        self.logger.info('Importing proxy servers from %s' % fin)
 
-            for line in f.readlines():
-                match = re.search(r'(\w+)://([a-zA-Z0-9_.]+):(\d+)', line)
+        for line in fin.readlines():
+            match = re.search(r'(\w+)://([a-zA-Z0-9_.]+):(\d+)', line)
 
-                if match != None:
-                    protocol, host, port = match.group(1), match.group(2), int(match.group(3))
+            if match != None:
+                protocol, host, port = match.group(1), match.group(2), int(match.group(3))
 
-                    self.logger.info('Insert: %s://%s:%d' % (protocol, host, port))
+                self.logger.info('Insert: %s://%s:%d' % (protocol, host, port))
 
-                    proxy = Proxy(protocol=protocol, host=host, port=port)
+                proxy = Proxy(protocol=protocol, host=host, port=port)
 
-                    try:
-                        self.session.add(proxy)
-                        self.session.commit()
+                try:
+                    self.session.add(proxy)
+                    self.session.commit()
 
-                    except Exception as e:
-                        self.logger.error(e)
-                        self.session.rollback()
+                except Exception as e:
+                    self.logger.error(e)
+                    self.session.rollback()
 
 
     def export_proxies(self, out=sys.stdout):

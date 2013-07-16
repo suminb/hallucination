@@ -43,7 +43,7 @@ def create():
 
 def _import(file_path):
     """Imports a list of proxy servers from a text file."""
-    proxy_factory.import_proxies(file_path)
+    proxy_factory.import_proxies(open(file_path, 'r'))
 
 
 def export(file_path):
