@@ -83,9 +83,9 @@ class ProxyFactory:
                         self.session.rollback()
 
 
-    def export_proxies(out=sys.stdout):
+    def export_proxies(self, out=sys.stdout):
         """Exports the list of proxy servers to the standard output."""
-        for row in Proxy.query.all():
+        for row in self.session.query(Proxy).all():
             out.write('%s://%s:%d\n' % (row.protocol, row.host, row.port))
 
 

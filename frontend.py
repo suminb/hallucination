@@ -33,20 +33,22 @@ def testrun_worker(proxy):
 def testrun():
     pool = Pool(processes=8)
     pool.map(testrun_worker, proxy_factory.session.query(Proxy).all())
+    # TODO: Fetch the following
+    # SELECT * FROM (SELECT proxy_id FROM proxy JOIN access_record ON proxy.rowid=access_record.proxy_id WHERE status_code != 200 ORDER BY timestamp DESC) GROUP BY proxy_id
 
 
 def create():
     proxy_factory.create_db()
 
 
-def _import(params):
+def _import(file_path):
     """Imports a list of proxy servers from a text file."""
-    proxy_factory.import_proxies(params)
+    proxy_factory.import_proxies(file_path)
 
 
-def export():
+def export(file_path):
     """Exports the list of proxy servers to the standard output."""
-    pass
+    proxy_factory.export_proxies(open(file_path, 'w'))
 
 
 def select():
@@ -68,6 +70,7 @@ def main():
             params = [a]
         elif o == '-x':
             rf = export
+            params = [a]
         elif o == '-s':
             rf = select
 
