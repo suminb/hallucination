@@ -32,14 +32,25 @@ To create an SQLite database file:
 
     python frontend.py -d proxy.db -c
 
-To export the proxy server list to a text file:
-
-.. code-block:: console
-
-    python frontend.py -d proxy.db -e proxylist.txt
-
 To import a text file containing a proxy server list:
 
 .. code-block:: console
 
     python frontend.py -d proxy.db -i proxylist.txt
+
+
+To export the proxy server list to a text file:
+
+.. code-block:: console
+
+    python frontend.py -d proxy.db -x proxylist.txt
+
+An exported file may look like the following:
+
+.. code-block::
+
+    http://84.42.3.3:3128
+    http://77.94.48.5:80
+    http://209.62.12.130:8118
+    http://159.255.160.23:8080
+    http://50.57.170.105:80
