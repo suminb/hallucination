@@ -1,6 +1,6 @@
 __author__ = 'Sumin Byeon'
 __email__ = 'suminb@gmail.com'
-__version__ = '0.2.3'
+__version__ = '0.2.4'
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql.expression import func, select
@@ -103,11 +103,9 @@ class ProxyFactory:
             raise Exception('Not enough proxy records.')
 
         statement = '''
-        SELECT * FROM (
-            SELECT *, avg(access_time) AS avg_access_time, sum(status_code) AS sumsc, count(*) AS cnt FROM (
-                    SELECT * FROM access_record WHERE timestamp > :timestamp
-                ) GROUP BY proxy_id
-        ) WHERE sumsc/cnt = 200 ORDER BY RANDOM()
+            SELECT *, avg(access_time) AS avg_access_time FROM (
+                SELECT * FROM access_record WHERE timestamp > :timestamp AND status_code = 200
+            ) GROUP BY proxy_id ORDER BY RANDOM()
         '''
 
         timestamp = datetime.utcnow() - timedelta(hours=1)
