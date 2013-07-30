@@ -3,12 +3,22 @@ sys.path.insert(0, 'hallucination')
 
 from hallucination import *
 
-h = Hallucination(dict(db_uri='sqlite:///test.db'))
+import logging
+
+logger = logging.getLogger('hallucination')
+logger.addHandler(logging.StreamHandler(sys.stderr))
+logger.setLevel(logging.INFO)
+
+factory = ProxyFactory(dict(
+	db_uri='sqlite:///test2.db',
+	logger=logger,
+))
 
 def main():
-    #print h.select(1)
-    #h.import_proxies('proxylist.txt')
-    h.test_run()
+	#factory.create_db()
+    #print factory.select(1)
+    #factory.import_proxies(open('proxylist.txt'))
+    print factory.make_request('http://static.suminb.com')
 
 if __name__ == '__main__':
     main()

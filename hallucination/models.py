@@ -180,5 +180,10 @@ class AccessRecord(Base):
     status_code = Column(Integer)
     access_time = Column(Float)
 
+    def __repr__(self):
+        return 'AccessRecord({}, {}, {}, {}, {}, {})'.format(
+            self.id, self.proxy_id, self.timestamp, self.alive,
+            self.status_code, self.access_time)
+
     def serialize(self):
         return serialize(self)

@@ -95,24 +95,36 @@ class ProxyFactory:
         if n <= 0:
             raise Exception('n must be a positive integer.')
 
-        if n > self.session.query(AccessRecord).count():
-            raise Exception('Not enough proxy records.')
+        if n > self.session.query(Proxy).count():
+            raise Exception('Not enough proxy servers.')
+
+        # statement = '''
+        #     SELECT *, avg(access_time) AS avg_access_time FROM (
+        #         SELECT *, (-10*alive)+access_time FROM access_record ORDER BY access_time, "timestamp" DESC LIMIT :n
+        #     ) GROUP BY proxy_id ORDER BY avg_access_time
+        # '''
 
         statement = '''
-            SELECT *, avg(access_time) AS avg_access_time FROM (
-                SELECT * FROM access_record WHERE timestamp > :timestamp AND status_code = 200
-            ) GROUP BY proxy_id ORDER BY RANDOM()
+            SELECT *, avg(access_time) AS avg_access_time, avg(alive) AS hit_ratio, abs(avg(status_code)-200) AS q
+                FROM  (SELECT * FROM access_record LIMIT :n)
+                GROUP BY proxy_id
+                HAVING q IS NOT NULL
+                ORDER BY q, hit_ratio DESC, avg_access_time
+                LIMIT :n
         '''
 
         timestamp = datetime.utcnow() - timedelta(hours=1)
 
         record = self.session.query(AccessRecord, 'proxy_id', 'avg_access_time').from_statement( \
-            statement).params(timestamp=timestamp).first()
+            statement).params(n=n*64).first()
+
+        self.logger.info(record)
 
         if record != None:
             return self.session.query(Proxy).filter_by(id=record.proxy_id).first()
         else:
-            raise Exception('No available proxy found.')
+            return self.session.query(Proxy).first()
+            #raise Exception('No available proxy found.')
 
 
     def report(self, id, status):
@@ -147,12 +159,13 @@ class ProxyFactory:
             status_code = r.status_code
 
         except ConnectionError as e:
-            self.logger.error(e)
-            raise e
+            self.logger.exception(e)
 
         except Timeout as e:
-            self.logger.error(e)
-            raise e
+            self.logger.exception(e)
+
+        except Exception as e:
+            self.logger.exception(e)
 
         finally:
             end_time = time.time()
@@ -165,7 +178,7 @@ class ProxyFactory:
                 access_time=end_time-start_time,
                 status_code=status_code)
 
-            self.logger.info('Inserting access record: %s' % record)
+            self.logger.info('Inserting access record: {}'.format(record))
 
             self.session.add(record)
             self.session.commit()
