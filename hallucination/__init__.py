@@ -106,7 +106,7 @@ class ProxyFactory:
 
         statement = '''
             SELECT *, avg(access_time) AS avg_access_time, avg(alive) AS hit_ratio, abs(avg(status_code)-200) AS q
-                FROM  (SELECT * FROM access_record LIMIT :n)
+                FROM  (SELECT * FROM access_record ORDER BY "timestamp" DESC LIMIT :n)
                 GROUP BY proxy_id
                 HAVING q IS NOT NULL
                 ORDER BY q, hit_ratio DESC, avg_access_time
@@ -115,7 +115,7 @@ class ProxyFactory:
 
         timestamp = datetime.utcnow() - timedelta(hours=1)
 
-        record = self.session.query(AccessRecord, 'proxy_id', 'avg_access_time').from_statement( \
+        record = self.session.query(AccessRecord, 'proxy_id', 'avg_access_time', 'hit_ratio', 'q').from_statement( \
             statement).params(n=n*64).first()
 
         self.logger.info(record)
@@ -140,9 +140,9 @@ class ProxyFactory:
 
         if proxy == None:
             proxy = self.select(1)
-            self.logger.info('No proxy is given. %s has been selected.' % proxy)
+            self.logger.info('No proxy is given. {} has been selected.'.format(proxy))
 
-        proxy_dict = {'http': '%s:%d' % (proxy.host, proxy.port)}
+        proxy_dict = {'http': '{}:{}'.format(proxy.host, proxy.port)}
 
         start_time = time.time()
         r = None

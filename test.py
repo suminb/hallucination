@@ -18,7 +18,7 @@ def main():
 	#factory.create_db()
     #print factory.select(1)
     #factory.import_proxies(open('proxylist.txt'))
-    print factory.make_request('http://static.suminb.com')
+    print factory.make_request('http://static.suminb.com/test.php?sleep=2', timeout=3.75)
 
 if __name__ == '__main__':
     main()
