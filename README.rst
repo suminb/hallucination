@@ -47,7 +47,7 @@ To export the proxy server list to a text file:
 
 An exported file may look like the following:
 
-.. code-block::
+.. code-block:: text
 
     http://84.42.3.3:3128
     http://77.94.48.5:80

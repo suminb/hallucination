@@ -51,8 +51,8 @@ class Proxy(Base):
     host = Column(String(255))
     port = Column(Integer)
 
-    hit_ratio = Column(Float(precision=64)) # aggregated value
-    access_time = Column(Float(precision=64)) # aggregated average value
+    hit_ratio = Column(Float) # aggregated value
+    access_time = Column(Float) # aggregated average value
     last_updated = Column(DateTime(timezone=True)) # aggregated average value
 
     def __repr__(self):

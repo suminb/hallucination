@@ -1,6 +1,6 @@
 __author__ = 'Sumin Byeon'
 __email__ = 'suminb@gmail.com'
-__version__ = '0.2.5'
+__version__ = '0.2.6'
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql.expression import func, select
