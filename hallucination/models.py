@@ -46,7 +46,7 @@ class Proxy(Base):
 
     __metadata__ = MetaData()
 
-    id = Column('ROWID', Integer, primary_key=True)
+    id = Column('rowid', Integer, primary_key=True)
     protocol = Column(String(8))
     host = Column(String(255))
     port = Column(Integer)
@@ -168,7 +168,7 @@ class AccessRecord(Base):
 
     __metadata__ = MetaData()
 
-    id = Column('ROWID', Integer, primary_key=True)
+    id = Column('rowid', Integer, primary_key=True)
     proxy_id = Column(Integer)
     timestamp = Column(DateTime(timezone=True))
 
@@ -178,7 +178,7 @@ class AccessRecord(Base):
     alive = Column(Boolean)
     url = Column(String(255))
     status_code = Column(Integer)
-    access_time = Column(Float(precision=64))
+    access_time = Column(Float)
 
     def serialize(self):
         return serialize(self)
