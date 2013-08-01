@@ -1,6 +1,6 @@
 __author__ = 'Sumin Byeon'
 __email__ = 'suminb@gmail.com'
-__version__ = '0.2.7'
+__version__ = '0.2.8'
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql.expression import func, select
@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 import logging
 import os, sys
 import requests
+import random
 
 
 class ProxyFactory:
@@ -25,6 +26,9 @@ class ProxyFactory:
 
         Session = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
         self.session = Session()
+
+        # NOTE: Workaround for AttributeError: 'Session' object has no attribute '_model_changes'
+        self.session._model_changes = dict()
 
     def create_db(self):
         # Base class is from models module
@@ -106,11 +110,11 @@ class ProxyFactory:
 
         statement = '''
             SELECT * FROM proxy LEFT JOIN (
-                SELECT proxy_id, avg(access_time) AS avg_access_time, avg(alive) AS hit_ratio, abs(avg(status_code)-200) AS q
+                SELECT proxy_id, avg(access_time) AS avg_access_time, -avg(alive) AS reverse_hit_ratio, abs(avg(status_code)-200) AS q
                     FROM (SELECT * FROM access_record LIMIT 100)
                     GROUP BY proxy_id
                 ) AS ar ON proxy.rowid = ar.proxy_id
-                ORDER BY ar.hit_ratio DESC, ar.avg_access_time, ar.q
+                ORDER BY ar.reverse_hit_ratio, ar.avg_access_time
                 LIMIT :n
         '''
 
@@ -134,7 +138,8 @@ class ProxyFactory:
         pass
 
 
-    def make_request(self, url, headers=[], params=[], timeout=5, req_type=requests.get, proxy=None):
+    def make_request(self, url, headers=[], params=[], timeout=5,
+        req_type=requests.get, proxy=None, pool_size=5):
         """Fetches a URL via a automatically selected proxy server, then reports the status."""
 
         from datetime import datetime
@@ -142,14 +147,14 @@ class ProxyFactory:
         import time
 
         if proxy == None:
-            proxy = self.select(1).first()
+            proxy = random.choice(self.select(pool_size).all())
             self.logger.info('No proxy is given. {} has been selected.'.format(proxy))
 
         proxy_dict = {'http': '{}:{}'.format(proxy.host, proxy.port)}
 
         start_time = time.time()
         r = None
-        alive = 0
+        alive = 0.0
         status_code = None
         try:
             if 'timeout' in self.config:
@@ -183,8 +188,12 @@ class ProxyFactory:
 
             self.logger.info('Inserting access record: {}'.format(record))
 
-            self.session.add(record)
-            self.session.commit()
+            try:
+                self.session.add(record)
+                self.session.commit()
+            except Exception as e:
+                self.logger.exception(e)
+                self.session.rollback()
 
             if r != None: self.logger.debug('Response body: %s' % r.text)
 
