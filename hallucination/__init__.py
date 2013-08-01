@@ -1,6 +1,6 @@
 __author__ = 'Sumin Byeon'
 __email__ = 'suminb@gmail.com'
-__version__ = '0.2.7'
+__version__ = '0.2.8'
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql.expression import func, select
@@ -29,6 +29,12 @@ class ProxyFactory:
 
         # NOTE: Workaround for AttributeError: 'Session' object has no attribute '_model_changes'
         self.session._model_changes = dict()
+
+
+    def __del__(self):
+        if self.session != None:
+            self.session.close()
+
 
     def create_db(self):
         # Base class is from models module
@@ -111,7 +117,7 @@ class ProxyFactory:
         statement = '''
             SELECT * FROM proxy LEFT JOIN (
                 SELECT proxy_id, avg(access_time) AS avg_access_time, avg(alive) AS hit_ratio
-                    FROM (SELECT * FROM access_record ORDER BY "timestamp" DESC LIMIT 1000) AS t1
+                    FROM (SELECT * FROM access_record ORDER BY "timestamp" DESC LIMIT 2500) AS t1
                     GROUP BY proxy_id
                 ) AS ar ON proxy.rowid = ar.proxy_id
                 ORDER BY ar.hit_ratio DESC, ar.avg_access_time
