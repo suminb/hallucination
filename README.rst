@@ -1,7 +1,10 @@
-Configuration
+Prerequisites
 -------------
 
-(TODO: Fill out this section)
+- `python-requests <http://docs.python-requests.org/en/latest/>`_
+- SQLAlchemy_
+
+.. _SQLAlchemy: http://www.sqlalchemy.org/
 
 Usage
 -----
@@ -14,14 +17,29 @@ To import a text file containing a proxy server list:
 .. code-block:: python
 
     proxy_factory = ProxyFactory(config=dict(db_uri='sqlite:///test.db'))
+    proxy_factory.create_db()
     proxy_factory.import_proxies('proxylist.txt')
+
+Hallucination supports multiple database backends, as long as supported by SQLAlchemy_.
+
+.. code-block:: python
+
+    proxy_factory = ProxyFactory(config=dict(db_uri='postgres://user:password@host/database'))
 
 To make a request:
 
 .. code-block:: python
 
-    r = proxy_factory.make_request('https://github.com/suminb/hallucination')
+    r = proxy_factory.make_request('http://github.com/suminb/hallucination')
     print r.text
+
+You may specify timeout in seconds:
+
+.. code-block:: python
+
+    r = proxy_factory.make_request('http://github.com/suminb/hallucination', timeout=5)
+    print r.text
+
 
 Shell frontend
 ``````````````
