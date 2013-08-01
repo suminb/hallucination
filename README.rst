@@ -12,12 +12,18 @@ Usage
 Python invocation
 `````````````````
 
-To import a text file containing a proxy server list:
+To create database tables:
 
 .. code-block:: python
 
     proxy_factory = ProxyFactory(config=dict(db_uri='sqlite:///test.db'))
     proxy_factory.create_db()
+
+To import a text file containing a proxy server list:
+
+.. code-block:: python
+
+    proxy_factory = ProxyFactory(config=dict(db_uri='sqlite:///test.db'))
     proxy_factory.import_proxies('proxylist.txt')
 
 Hallucination supports multiple database backends, as long as supported by SQLAlchemy_.
