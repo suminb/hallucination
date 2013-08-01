@@ -123,7 +123,7 @@ class ProxyFactory:
         if record != None:
             return self.session.query(Proxy).filter_by(id=record.proxy_id).first()
         else:
-            return self.session.query(Proxy).first()
+            return self.session.query(Proxy).order_by(func.random()).first()
             #raise Exception('No available proxy found.')
 
 

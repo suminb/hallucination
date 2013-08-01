@@ -10,7 +10,7 @@ logger.addHandler(logging.StreamHandler(sys.stderr))
 logger.setLevel(logging.INFO)
 
 factory = ProxyFactory(dict(
-	db_uri='sqlite:///test2.db',
+	db_uri='sqlite:///test3.db',
 	logger=logger,
 ))
 
