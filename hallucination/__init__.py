@@ -1,6 +1,6 @@
 __author__ = 'Sumin Byeon'
 __email__ = 'suminb@gmail.com'
-__version__ = '0.2.8'
+__version__ = '0.2.7'
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql.expression import func, select
@@ -110,11 +110,11 @@ class ProxyFactory:
 
         statement = '''
             SELECT * FROM proxy LEFT JOIN (
-                SELECT proxy_id, avg(access_time) AS avg_access_time, -avg(alive) AS reverse_hit_ratio, abs(avg(status_code)-200) AS q
-                    FROM (SELECT * FROM access_record LIMIT 100)
+                SELECT proxy_id, avg(access_time) AS avg_access_time, avg(alive) AS hit_ratio
+                    FROM (SELECT * FROM access_record ORDER BY "timestamp" DESC LIMIT 1000) AS t1
                     GROUP BY proxy_id
                 ) AS ar ON proxy.rowid = ar.proxy_id
-                ORDER BY ar.reverse_hit_ratio, ar.avg_access_time
+                ORDER BY ar.hit_ratio DESC, ar.avg_access_time
                 LIMIT :n
         '''
 
@@ -122,8 +122,6 @@ class ProxyFactory:
 
         record = self.session.query(Proxy).from_statement( \
             statement).params(n=n)
-
-        self.logger.info(record)
 
         return record
 
@@ -164,7 +162,7 @@ class ProxyFactory:
             #r = requests.get(url, headers=headers, proxies=proxy_dict, timeout=timeout)
             r = req_type(url, headers=headers, data=params, proxies=proxy_dict, timeout=timeout)
             status_code = r.status_code
-            alive = 1.0 if status_code == 200 else 0.5
+            alive = 1.0 if status_code == 200 else -0.5
 
         except ConnectionError as e:
             self.logger.exception(e)
