@@ -105,26 +105,29 @@ class ProxyFactory:
         # '''
 
         statement = '''
-            SELECT *, avg(access_time) AS avg_access_time, avg(alive) AS hit_ratio, abs(avg(status_code)-200) AS q
-                FROM  (SELECT * FROM access_record ORDER BY "timestamp" DESC LIMIT :n)
-                GROUP BY proxy_id
-                HAVING q IS NOT NULL
-                ORDER BY q, hit_ratio DESC, avg_access_time
+            SELECT * FROM proxy LEFT JOIN (
+                SELECT proxy_id, avg(access_time) AS avg_access_time, avg(alive) AS hit_ratio, abs(avg(status_code)-200) AS q
+                    FROM (SELECT * FROM access_record LIMIT 100)
+                    GROUP BY proxy_id
+                ) AS ar ON proxy.rowid = ar.proxy_id
+                ORDER BY ar.hit_ratio DESC, ar.avg_access_time, ar.q
                 LIMIT :n
         '''
 
-        timestamp = datetime.utcnow() - timedelta(hours=1)
+        #timestamp = datetime.utcnow() - timedelta(hours=1)
 
-        record = self.session.query(AccessRecord, 'proxy_id', 'avg_access_time', 'hit_ratio', 'q').from_statement( \
-            statement).params(n=n*64).first()
+        record = self.session.query(Proxy).from_statement( \
+            statement).params(n=n)
 
         self.logger.info(record)
 
-        if record != None:
-            return self.session.query(Proxy).filter_by(id=record.proxy_id).first()
-        else:
-            return self.session.query(Proxy).order_by(func.random()).first()
-            #raise Exception('No available proxy found.')
+        return record
+
+        # if record != None:
+        #     return self.session.query(Proxy).filter_by(id=record.proxy_id).first()
+        # else:
+        #     return self.session.query(Proxy).order_by(func.random()).first()
+        #     #raise Exception('No available proxy found.')
 
 
     def report(self, id, status):
@@ -139,14 +142,14 @@ class ProxyFactory:
         import time
 
         if proxy == None:
-            proxy = self.select(1)
+            proxy = self.select(1).first()
             self.logger.info('No proxy is given. {} has been selected.'.format(proxy))
 
         proxy_dict = {'http': '{}:{}'.format(proxy.host, proxy.port)}
 
         start_time = time.time()
         r = None
-        alive = False
+        alive = 0
         status_code = None
         try:
             if 'timeout' in self.config:
@@ -155,8 +158,8 @@ class ProxyFactory:
             # TODO: Support for other HTTP verbs
             #r = requests.get(url, headers=headers, proxies=proxy_dict, timeout=timeout)
             r = req_type(url, headers=headers, data=params, proxies=proxy_dict, timeout=timeout)
-            alive = True
             status_code = r.status_code
+            alive = 1.0 if status_code == 200 else 0.5
 
         except ConnectionError as e:
             self.logger.exception(e)

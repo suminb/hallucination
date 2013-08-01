@@ -1,8 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, MetaData
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
-#from sqlalchemy.dialects.postgresql import UUID
-#from core import app, db
 
 import logging
 
@@ -51,8 +49,8 @@ class Proxy(Base):
     host = Column(String(255))
     port = Column(Integer)
 
-    hit_ratio = Column(Float) # aggregated value
-    access_time = Column(Float) # aggregated average value
+    #hit_ratio = Column(Float) # aggregated value
+    #access_time = Column(Float) # aggregated average value
     last_updated = Column(DateTime(timezone=True)) # aggregated average value
 
     def __repr__(self):
@@ -142,10 +140,10 @@ class Proxy(Base):
             status_code = req.status_code
 
         except ConnectionError as e:
-            logging.error(e)
+            logging.exception(e)
 
         except Timeout as e:
-            logging.error(e)
+            logging.exception(e)
 
         end_time = time.time()
 
@@ -175,7 +173,7 @@ class AccessRecord(Base):
     user_agent = Column(String(255))
     remote_address = Column(String(64))
     
-    alive = Column(Boolean)
+    alive = Column(Float)
     url = Column(String(255))
     status_code = Column(Integer)
     access_time = Column(Float)
