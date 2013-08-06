@@ -1,6 +1,6 @@
 __author__ = 'Sumin Byeon'
 __email__ = 'suminb@gmail.com'
-__version__ = '0.2.8'
+__version__ = '0.2.9'
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql.expression import func, select
@@ -17,12 +17,15 @@ import random
 
 class ProxyFactory:
 
-    def __init__(self, config={}, logger=logging.getLogger('hallucination')):
+    def __init__(self, config={}, db_engine=None, logger=logging.getLogger('hallucination')):
         self.config = config
         self.logger = logger
 
-        self.engine = create_engine(config['db_uri'])
-        self.db = self.engine.connect()
+        if db_engine == None:
+            self.engine = create_engine(config['db_uri'])
+            self.db = self.engine.connect()
+        else:
+            self.engine = db_engine
 
         Session = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
         self.session = Session()
@@ -33,7 +36,12 @@ class ProxyFactory:
 
     def __del__(self):
         if self.session != None:
+            self.logger.info('Closing session')
             self.session.close()
+
+        if self.db != None:
+            self.logger.info('Closing database')
+            self.db.close()
 
 
     def create_db(self):
