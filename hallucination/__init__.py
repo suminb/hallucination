@@ -1,6 +1,6 @@
 __author__ = 'Sumin Byeon'
 __email__ = 'suminb@gmail.com'
-__version__ = '0.2.9'
+__version__ = '0.2.10'
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql.expression import func, select
@@ -35,11 +35,11 @@ class ProxyFactory:
 
 
     def __del__(self):
-        if self.session != None:
+        if hasattr(self, 'session') and self.session != None:
             self.logger.info('Closing session')
             self.session.close()
 
-        if self.db != None:
+        if hasattr(self, 'db') and self.db != None:
             self.logger.info('Closing database')
             self.db.close()
 
