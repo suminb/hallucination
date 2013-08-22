@@ -36,11 +36,9 @@ class ProxyFactory:
 
     def __del__(self):
         if hasattr(self, 'session') and self.session != None:
-            self.logger.info('Closing session')
             self.session.close()
 
         if hasattr(self, 'db') and self.db != None:
-            self.logger.info('Closing database')
             self.db.close()
 
 
@@ -145,6 +143,21 @@ class ProxyFactory:
         #     return self.session.query(Proxy).order_by(func.random()).first()
         #     #raise Exception('No available proxy found.')
 
+
+    def get_evaluation_targets(self):
+        statement = '''
+            SELECT * FROM proxy LEFT JOIN (
+                SELECT proxy_id, count(*) AS count
+                    FROM (SELECT * FROM access_record ORDER BY "timestamp" DESC LIMIT 2500) AS t1
+                    GROUP BY proxy_id
+                ) AS ar ON proxy.rowid = ar.proxy_id
+                WHERE ar.count IS NULL OR ar.count < 10
+        '''
+
+        record = self.session.query(Proxy).from_statement( \
+            statement)
+
+        return record
 
     def report(self, id, status):
         pass

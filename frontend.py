@@ -54,9 +54,19 @@ def export(file_path):
 def select():
     print proxy_factory.select(1)
 
+def evaluate():
+    """Selects proxy servers that have not been recently evaluated, and evaluates each of them."""
+
+    for proxy in proxy_factory.get_evaluation_targets():
+        try:
+            logger.info('Evaluating {}'.format(proxy))
+            req = proxy_factory.make_request(url, proxy=proxy, timeout=10)
+        except Exception as e:
+            logger.error(e)
+
 
 def main():
-    opts, args = getopt.getopt(sys.argv[1:], 'cti:x:sd:')
+    opts, args = getopt.getopt(sys.argv[1:], 'cti:x:sd:E')
 
     rf = None
     params = []
@@ -73,6 +83,8 @@ def main():
             params = [a]
         elif o == '-s':
             rf = select
+        elif o == '-E':
+            rf = evaluate
 
         elif o == '-d':
             config['db_uri'] = 'sqlite:///%s' % a
