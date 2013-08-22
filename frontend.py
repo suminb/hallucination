@@ -22,7 +22,10 @@ def testrun_request(proxy):
     # NOTE: For some reason, testrun_worker has problems of calling class-level
     # functions. It will produce an error message like following:
     # PicklingError: Can't pickle <type 'function'>: attribute lookup __builtin__.function failed
-    proxy_factory.make_request(url, proxy=proxy)
+    
+    # FIXME: Read 'timeout' from config
+
+    proxy_factory.make_request(url, proxy=proxy, timeout=10)
 
 def testrun_worker(proxy):
     try:
@@ -31,11 +34,10 @@ def testrun_worker(proxy):
     except Exception as e:
         logger.error(str(e))
 
-def testrun():
+def testrun(proxies):
+    # FIXME: Read 'processes' from config
     pool = Pool(processes=8)
-    pool.map(testrun_worker, proxy_factory.session.query(Proxy).all())
-    # TODO: Fetch the following
-    # SELECT * FROM (SELECT proxy_id FROM proxy JOIN access_record ON proxy.rowid=access_record.proxy_id WHERE status_code != 200 ORDER BY timestamp DESC) GROUP BY proxy_id
+    pool.map(testrun_worker, proxies)
 
 
 def create():
@@ -58,13 +60,7 @@ def select():
 
 def evaluate():
     """Selects proxy servers that have not been recently evaluated, and evaluates each of them."""
-
-    for proxy in proxy_factory.get_evaluation_targets():
-        try:
-            logger.info('Evaluating {}'.format(proxy))
-            req = proxy_factory.make_request(url, proxy=proxy, timeout=10)
-        except Exception as e:
-            logger.error(e)
+    testrun(proxy_factory.get_evaluation_targets())
 
 
 def parse_config(file_name):
