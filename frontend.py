@@ -35,7 +35,7 @@ class TestrunThread(Thread):
 
     def run(self):
         while True:
-            print self.queue.qsize()
+            logger.info('Qsize = {} (approx.)'.format(self.queue.qsize()))
 
             url, proxy = self.queue.get()
 
@@ -72,12 +72,12 @@ def evaluate():
 
     queue = Queue()
 
-    for proxy in proxy_factory.get_evaluation_targets():
-        queue.put((url, proxy))
-
     for i in range(threads):
         thread = TestrunThread(queue=queue, config=config)
         thread.start()
+
+    for proxy in proxy_factory.get_evaluation_targets():
+        queue.put((url, proxy))
 
     queue.join()
 
