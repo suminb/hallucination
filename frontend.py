@@ -74,6 +74,7 @@ def evaluate():
 
     for i in range(threads):
         thread = TestrunThread(queue=queue, config=config)
+        thread.daemon = True
         thread.start()
 
     for proxy in proxy_factory.get_evaluation_targets():
