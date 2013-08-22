@@ -5,6 +5,7 @@ from multiprocessing import Pool
 import getopt
 import os, sys
 import logging
+import json
 
 logger = logging.getLogger('hallucination')
 logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -54,6 +55,7 @@ def export(file_path):
 def select():
     print proxy_factory.select(1)
 
+
 def evaluate():
     """Selects proxy servers that have not been recently evaluated, and evaluates each of them."""
 
@@ -65,8 +67,15 @@ def evaluate():
             logger.error(e)
 
 
+def parse_config(file_name):
+    raw_config = file(file_name, 'r').read()
+
+    global config
+    config = json.loads(raw_config)
+
+
 def main():
-    opts, args = getopt.getopt(sys.argv[1:], 'cti:x:sd:E')
+    opts, args = getopt.getopt(sys.argv[1:], 'cti:x:sd:E', ['config='])
 
     rf = None
     params = []
@@ -86,14 +95,17 @@ def main():
         elif o == '-E':
             rf = evaluate
 
+        elif o == '--config':
+            parse_config(a)
+
         elif o == '-d':
             config['db_uri'] = 'sqlite:///%s' % a
 
-            global proxy_factory
-            proxy_factory = ProxyFactory(config=dict(
-                db_uri=config['db_uri']),
-                logger=logger
-            )
+    global proxy_factory
+    proxy_factory = ProxyFactory(config=dict(
+        db_uri=config['db_uri']),
+        logger=logger
+    )
 
     if rf != None:
         rf(*params)
