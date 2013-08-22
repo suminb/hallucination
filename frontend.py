@@ -1,6 +1,8 @@
 from hallucination import ProxyFactory
 from hallucination.models import Proxy
 from multiprocessing import Pool
+from threading import Thread, Lock
+from Queue import Queue
 
 import getopt
 import os, sys
@@ -17,27 +19,30 @@ config = {}
 url = 'http://translate.google.com'
 proxy_factory = None
 
+threads = 8
 
-def testrun_request(proxy):
-    # NOTE: For some reason, testrun_worker has problems of calling class-level
-    # functions. It will produce an error message like following:
-    # PicklingError: Can't pickle <type 'function'>: attribute lookup __builtin__.function failed
-    
-    # FIXME: Read 'timeout' from config
 
-    proxy_factory.make_request(url, proxy=proxy, timeout=10)
+class TestrunThread(Thread):
+    def __init__(self, queue, config):
+        super(TestrunThread, self).__init__()
 
-def testrun_worker(proxy):
-    try:
-        logger.info('Test run: Fetching %s via %s' % (url, proxy))
-        testrun_request(proxy)
-    except Exception as e:
-        logger.error(str(e))
+        self.queue = queue
 
-def testrun(proxies):
-    # FIXME: Read 'processes' from config
-    pool = Pool(processes=8)
-    pool.map(testrun_worker, proxies)
+        self.proxy_factory = ProxyFactory(config=dict(
+            db_uri=config['db_uri']),
+            logger=logger
+        )
+
+    def run(self):
+        while True:
+            print self.queue.qsize()
+
+            url, proxy = self.queue.get()
+
+            logger.info('Test run: Fetching %s via %s' % (url, proxy))
+            self.proxy_factory.make_request(url, proxy=proxy, timeout=3)
+
+            self.queue.task_done()
 
 
 def create():
@@ -59,8 +64,22 @@ def select():
 
 
 def evaluate():
-    """Selects proxy servers that have not been recently evaluated, and evaluates each of them."""
-    testrun(proxy_factory.get_evaluation_targets())
+    """
+    Selects proxy servers that have not been recently evaluated, and evaluates each of them.
+
+    Refered http://docs.python.org/2/library/queue.html for skeleton code.
+    """
+
+    queue = Queue()
+
+    for proxy in proxy_factory.get_evaluation_targets():
+        queue.put((url, proxy))
+
+    for i in range(threads):
+        thread = TestrunThread(queue=queue, config=config)
+        thread.start()
+
+    queue.join()
 
 
 def parse_config(file_name):

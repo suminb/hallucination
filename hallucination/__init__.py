@@ -185,17 +185,15 @@ class ProxyFactory:
             if 'timeout' in self.config:
                 timeout = self.config['timeout']
 
-            # TODO: Support for other HTTP verbs
-            #r = requests.get(url, headers=headers, proxies=proxy_dict, timeout=timeout)
             r = req_type(url, headers=headers, data=params, proxies=proxy_dict, timeout=timeout)
             status_code = r.status_code
             alive = 1.0 if status_code == 200 else -0.5
 
         except ConnectionError as e:
-            self.logger.exception(e)
+            self.logger.error(e)
 
         except Timeout as e:
-            self.logger.exception(e)
+            self.logger.error(e)
 
         except Exception as e:
             self.logger.exception(e)
