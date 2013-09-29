@@ -17,16 +17,15 @@ def readme():
 
 
 setup(name='hallucination',
-      py_modules=['hallucination', 'hallucination.models'],
       version=hallucination.__version__,
       description='A Python library for proxy server list management',
       long_description=readme(),
       author=hallucination.__author__,
       author_email=hallucination.__email__,
       url='http://github.com/suminb/hallucination',
-      packages=[],
-      install_requires=[
-          'sqlalchemy >= 0.8',
-          'requests >= 2.0.0',
+      packages=['hallucination'],
+      requires=[
+          'sqlalchemy (>= 0.8)',
+          'requests (>= 2.0.0)',
       ],
     )
