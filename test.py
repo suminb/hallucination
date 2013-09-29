@@ -1,6 +1,7 @@
 import os, sys
 sys.path.insert(0, 'hallucination')
 
+from testify import *
 from hallucination import *
 
 import logging
@@ -9,16 +10,20 @@ logger = logging.getLogger('hallucination')
 logger.addHandler(logging.StreamHandler(sys.stderr))
 logger.setLevel(logging.INFO)
 
-factory = ProxyFactory(dict(
-    db_uri='sqlite:///test4.db',
-    logger=logger,
-))
 
-def main():
-    #factory.create_db()
-    #print factory.select(1)
-    #factory.import_proxies(open('proxylist.txt'))
-    print factory.make_request('http://static.suminb.com/test.php?sleep=2', timeout=3.75)
+class DefaultTestCase(TestCase):
+    @class_setup
+    def init_class(self):
+        self.factory = ProxyFactory(dict(
+            db_uri='sqlite:///test.db',
+            logger=logger,
+        ))
+       
+    def test(self):
+        #factory.make_request('http://github.com')
+        pass
+
 
 if __name__ == '__main__':
-    main()
+    run()
+

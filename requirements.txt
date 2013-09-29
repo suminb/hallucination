@@ -1,2 +1,4 @@
 sqlalchemy
+requests
+testify
 
