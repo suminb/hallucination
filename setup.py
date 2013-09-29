@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
-import hallucination
+from hallucination import __version__, __author__, __email__
 
 
 def readme():
@@ -17,11 +17,11 @@ def readme():
 
 
 setup(name='hallucination',
-      version=hallucination.__version__,
+      version=__version__,
       description='A Python library for proxy server list management',
       long_description=readme(),
-      author=hallucination.__author__,
-      author_email=hallucination.__email__,
+      author=__author__,
+      author_email=__email__,
       url='http://github.com/suminb/hallucination',
       packages=['hallucination'],
       requires=[

@@ -2,17 +2,23 @@ __author__ = 'Sumin Byeon'
 __email__ = 'suminb@gmail.com'
 __version__ = '0.2.14'
 
-from sqlalchemy import MetaData, create_engine
-from sqlalchemy.sql.expression import func, select
-from sqlalchemy.orm import sessionmaker, aliased
-from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
-from models import *
-from datetime import datetime, timedelta
 
-import logging
-import os, sys
-import requests
-import random
+# NOTE: A shady workaround for Travis CI. Not sure if this is a good idea.
+try:
+    from sqlalchemy import MetaData, create_engine
+    from sqlalchemy.sql.expression import func, select
+    from sqlalchemy.orm import sessionmaker, aliased
+    from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
+
+    from models import *
+    from datetime import datetime, timedelta
+
+    import logging
+    import os, sys
+    import requests
+    import random
+except:
+    pass
 
 
 class ProxyFactory:
