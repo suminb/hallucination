@@ -47,11 +47,11 @@ class ProxyFactory:
         Base.metadata.create_all(self.engine)
 
 
-    def get(id):
-        return Proxy.query.get(id)
+    def get(self, id):
+        return self.session.query(Proxy).get(id)
 
 
-    def insert(protocol, host, port):
+    def insert(self, protocol, host, port):
         """Inserts a proxy record into the database. Returns an ID of the newly created object."""
 
         p = Proxy(protocol=protocol, host=host, port=port)
@@ -62,11 +62,11 @@ class ProxyFactory:
         return p.id
 
 
-    def update(id, **pairs):
+    def update(self, id, **pairs):
         pass
 
 
-    def delete(id):
+    def delete(self, id):
         pass
 
 
