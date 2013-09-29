@@ -173,7 +173,7 @@ class ProxyFactory:
 
         if proxy == None:
             proxy = random.choice(self.select(pool_size).all())
-            self.logger.info('No proxy is given. {} has been selected.'.format(proxy))
+            self.logger.info('No proxy is given. {0} has been selected.'.format(proxy))
 
         proxy_dict = {'{0}': '{0}://{1}:{2}'.format(
             proxy.protocol, proxy.host, proxy.port)}
@@ -210,7 +210,7 @@ class ProxyFactory:
                 access_time=end_time-start_time,
                 status_code=status_code)
 
-            self.logger.info('Inserting access record: {}'.format(record))
+            self.logger.info('Inserting access record: {0}'.format(record))
 
             try:
                 self.session.add(record)
