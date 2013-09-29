@@ -32,15 +32,17 @@ class DefaultTestCase(TestCase):
         assert_equal(self.factory.get(1), None)
 
     def test_insertion(self):
-        pid = self.factory.insert('http', 'localhost', 8080)
+        pid = self.factory.insert('http', '12.199.141.164', 8000)
         assert_equal(pid, 1)
 
     def test_nonempty_pool(self):
         assert_not_equal(self.factory.get(1), None)
        
-    def test(self):
-        #factory.make_request('http://github.com')
-        pass
+    def test_request(self):
+        proxy = self.factory.get(1)
+        req = self.factory.make_request('http://github.com', proxy=proxy)
+
+        assert_equal(req.status_code, 200)
 
 
     @class_teardown

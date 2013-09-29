@@ -1,6 +1,6 @@
 __author__ = 'Sumin Byeon'
 __email__ = 'suminb@gmail.com'
-__version__ = '0.2.12'
+__version__ = '0.2.13'
 
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql.expression import func, select
@@ -175,7 +175,8 @@ class ProxyFactory:
             proxy = random.choice(self.select(pool_size).all())
             self.logger.info('No proxy is given. {} has been selected.'.format(proxy))
 
-        proxy_dict = {'http': '{}:{}'.format(proxy.host, proxy.port)}
+        proxy_dict = {'{0}': '{0}://{1}:{2}'.format(
+            proxy.protocol, proxy.host, proxy.port)}
 
         start_time = time.time()
         r = None
