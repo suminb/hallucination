@@ -21,7 +21,7 @@ class DefaultTestCase(TestCase):
             os.remove(self.DB_NAME)
 
         self.factory = ProxyFactory(dict(
-            db_uri='sqlite:///{}'.format(self.DB_NAME),
+            db_uri='sqlite:///{0}'.format(self.DB_NAME),
             logger=logger,
         ))
 
