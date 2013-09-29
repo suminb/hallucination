@@ -25,4 +25,8 @@ setup(name='hallucination',
       author_email=hallucination.__email__,
       url='http://github.com/suminb/hallucination',
       packages=[],
-     )
+      install_requires=[
+          'sqlalchemy >= 0.8',
+          'requests >= 2.0.0',
+      ],
+    )
