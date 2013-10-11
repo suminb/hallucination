@@ -161,7 +161,7 @@ class ProxyFactory:
         pass
 
 
-    def make_request(self, url, headers=[], params=[], timeout=5,
+    def make_request(self, url, headers=None, params=None, timeout=5,
         req_type=requests.get, proxy=None, pool_size=5):
         """Fetches a URL via a automatically selected proxy server, then reports the status."""
 
