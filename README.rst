@@ -1,7 +1,7 @@
 Travis CI
 ---------
 
-.. image:: https://travis-ci.org/suminb/hallucination.png?branch=0.2.15   :target: https://travis-ci.org/suminb/hallucination
+.. image:: https://travis-ci.org/suminb/hallucination.png?branch=master   :target: https://travis-ci.org/suminb/hallucination
 
 
 Prerequisites
