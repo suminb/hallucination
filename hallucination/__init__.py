@@ -3,7 +3,7 @@ from sqlalchemy.sql.expression import func, select
 from sqlalchemy.orm import sessionmaker, aliased
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 
-from models import *
+from hallucination.models import *
 from datetime import datetime, timedelta
 
 import requests
