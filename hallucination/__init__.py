@@ -161,7 +161,7 @@ class ProxyFactory:
         pass
 
 
-    def make_request(self, url, headers=None, params=None, timeout=5,
+    def make_request(self, url, headers=None, params=None, data=None, timeout=5,
         req_type=requests.get, proxy=None, pool_size=5):
         """Fetches a URL via a automatically selected proxy server, then reports the status."""
 
@@ -184,7 +184,9 @@ class ProxyFactory:
             if 'timeout' in self.config:
                 timeout = self.config['timeout']
 
-            r = req_type(url, headers=headers, data=params, proxies=proxy_dict, timeout=timeout)
+            r = req_type(url, headers=headers, params=params, data=data,
+                proxies=proxy_dict, timeout=timeout)
+
             status_code = r.status_code
             alive = 1.0 if status_code == 200 else -0.5
 
