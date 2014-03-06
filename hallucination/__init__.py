@@ -71,6 +71,11 @@ class ProxyFactory:
     def import_proxies(self, fin=sys.stdin):
         """Imports a list of proxy servers from a text file."""
         import re
+        if type(fin) == str:
+            res = None
+            with open(fin) as f:
+                res = self.import_proxies(f)
+            return res
             
         self.logger.info('Importing proxy servers from %s' % fin)
 
