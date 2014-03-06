@@ -5,6 +5,7 @@ from py.test import *
 from hallucination import *
 
 DB_NAME = '/tmp/test.db'
+FILE_NAME = '/tmp/test.txt'
 
 import logging
 
@@ -35,6 +36,12 @@ def test_empty_pool():
 def test_insertion():
     pid = factory.insert('http', '12.199.141.164', 8000)
     assert pid == 1
+
+def test_import():
+    with open(FILE_NAME, 'w') as f:
+        f.write('http://12.199.141.164:8000')
+    factory.import_proxies(FILE_NAME)
+    assert factory.get(2) != None
 
 def test_nonempty_pool():
     assert factory.get(1) != None

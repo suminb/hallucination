@@ -71,6 +71,11 @@ class ProxyFactory:
     def import_proxies(self, fin=sys.stdin):
         """Imports a list of proxy servers from a text file."""
         import re
+        if type(fin) == str:
+            res = None
+            with open(fin) as f:
+                res = self.import_proxies(f)
+            return res
             
         self.logger.info('Importing proxy servers from %s' % fin)
 
@@ -173,7 +178,7 @@ class ProxyFactory:
             proxy = random.choice(self.select(pool_size).all())
             self.logger.info('No proxy is given. {0} has been selected.'.format(proxy))
 
-        proxy_dict = {'{0}': '{0}://{1}:{2}'.format(
+        proxy_dict = {'%s' % proxy.protocol: '{0}://{1}:{2}'.format(
             proxy.protocol, proxy.host, proxy.port)}
 
         start_time = time.time()
