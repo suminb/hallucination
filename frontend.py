@@ -60,7 +60,7 @@ def export(file_path):
 
 
 def select():
-    print proxy_factory.select(1)
+    print(proxy_factory.select(1))
 
 
 def evaluate():
