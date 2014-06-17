@@ -39,7 +39,7 @@ def test_insertion():
 
 def test_import():
     with open(FILE_NAME, 'w') as f:
-        f.write('http://12.199.141.164:8000')
+        f.write('http://12.199.141.165:8000')
     factory.import_proxies(FILE_NAME)
     assert factory.get(2) != None
 
