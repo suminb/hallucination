@@ -10,6 +10,7 @@ import requests
 from requests.exceptions import ConnectionError, Timeout
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql import func
 
 from hallucination.models import AccessRecord, Base, Proxy
 
@@ -250,6 +251,11 @@ class ProxyFactory:
 
             self.logger.info("Inserting access record: {0}".format(record))
 
+            # Do not add `proxy` object to the current session. This will be
+            # added by the main thread and updated by update_statistics()
+            # later.
+            proxy.updated_at = record.created_at
+
             try:
                 self.session.add(record)
                 self.session.commit()
@@ -261,3 +267,16 @@ class ProxyFactory:
                 self.logger.debug("Response body: %s" % r.text)
 
         return r
+
+    def update_statistics(self, proxy):
+        proxy.hit_ratio, proxy.latency = self.session.query(
+            func.avg(AccessRecord.alive),
+            func.avg(AccessRecord.latency),
+        ).filter(AccessRecord.proxy_id == proxy.id).first()
+
+        try:
+            self.session.add(proxy)
+            self.session.commit()
+        except Exception as e:
+            self.logger.exception(e)
+            self.session.rollback()

@@ -202,7 +202,7 @@ class AccessRecord(Base):
 
     def __repr__(self):
         return "AccessRecord({}, {}, {}, {}, {}, {})".format(
-            self.rowid,
+            self.id,
             self.proxy_id,
             self.created_at,
             self.alive,

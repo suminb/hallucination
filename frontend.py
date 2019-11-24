@@ -104,10 +104,14 @@ def evaluate():
         thread.daemon = True
         thread.start()
 
+    proxies = []
     for proxy in proxy_factory.get_evaluation_targets():
         queue.put((url.format(protocol=proxy.protocol), proxy))
+        proxies.append(proxy)
 
     queue.join()
+    for proxy in proxies:
+        proxy_factory.update_statistics(proxy)
 
 
 if __name__ == "__main__":
