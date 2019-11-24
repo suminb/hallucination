@@ -1,57 +1,59 @@
-from sqlalchemy import MetaData, create_engine, text
-from sqlalchemy.sql.expression import func, select
-from sqlalchemy.orm import sessionmaker, aliased
-from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
-
-from hallucination.models import *
-from datetime import datetime, timedelta
-
-import requests
+import random
+import sys
 
 import logging
-import os, sys
+import requests
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 
-import random
+from hallucination.models import AccessRecord, Base, Proxy
+
 
 class ProxyFactory:
     # Why is this called 'factory'?
 
-    def __init__(self, config={}, db_engine=None, logger=logging.getLogger('hallucination')):
+    def __init__(
+        self,
+        config={},
+        db_engine=None,
+        logger=logging.getLogger("hallucination"),
+    ):
         self.config = config
         self.logger = logger
 
-        if db_engine == None:
-            self.engine = create_engine(config['db_uri'])
+        if db_engine is None:
+            self.engine = create_engine(config["db_uri"])
             self.db = self.engine.connect()
         else:
             self.engine = db_engine
 
-        Session = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+        Session = sessionmaker(
+            autocommit=False, autoflush=False, bind=self.engine
+        )
         self.session = Session()
 
-        # NOTE: Workaround for AttributeError: 'Session' object has no attribute '_model_changes'
+        # NOTE: Workaround for AttributeError: 'Session' object has no
+        # attribute '_model_changes'
         self.session._model_changes = dict()
 
-
     def __del__(self):
-        if hasattr(self, 'session') and self.session != None:
+        if hasattr(self, "session") and self.session is not None:
             self.session.close()
 
-        if hasattr(self, 'db') and self.db != None:
+        if hasattr(self, "db") and self.db is not None:
             self.db.close()
-
 
     def create_db(self):
         # Base class is from models module
         Base.metadata.create_all(self.engine)
 
-
     def get(self, id):
         return self.session.query(Proxy).get(id)
 
-
     def insert(self, protocol, host, port):
-        """Inserts a proxy record into the database. Returns an ID of the newly created object."""
+        """Inserts a proxy record into the database. Returns an ID of the
+        newly created object.
+        """
 
         p = Proxy(protocol=protocol, host=host, port=port)
 
@@ -60,33 +62,35 @@ class ProxyFactory:
 
         return p.id
 
-
     def update(self, id, **pairs):
         pass
-
 
     def delete(self, id):
         pass
 
-
     def import_proxies(self, fin=sys.stdin):
         """Imports a list of proxy servers from a text file."""
         import re
+
         if type(fin) == str:
             res = None
             with open(fin) as f:
                 res = self.import_proxies(f)
             return res
-            
-        self.logger.info('Importing proxy servers from %s' % fin)
+
+        self.logger.info("Importing proxy servers from %s" % fin)
 
         for line in fin.readlines():
-            match = re.search(r'(\w+)://([a-zA-Z0-9_.]+):(\d+)', line)
+            match = re.search(r"(\w+)://([a-zA-Z0-9_.]+):(\d+)", line)
 
-            if match != None:
-                protocol, host, port = match.group(1), match.group(2), int(match.group(3))
+            if match is not None:
+                protocol, host, port = (
+                    match.group(1),
+                    match.group(2),
+                    int(match.group(3)),
+                )
 
-                self.logger.info('Insert: %s://%s:%d' % (protocol, host, port))
+                self.logger.info("Insert: %s://%s:%d" % (protocol, host, port))
 
                 proxy = Proxy(protocol=protocol, host=host, port=port)
 
@@ -98,12 +102,10 @@ class ProxyFactory:
                     self.logger.error(e)
                     self.session.rollback()
 
-
     def export_proxies(self, out=sys.stdout):
         """Exports the list of proxy servers to the standard output."""
         for row in self.session.query(Proxy).all():
-            out.write('%s://%s:%d\n' % (row.protocol, row.host, row.port))
-
+            out.write("%s://%s:%d\n" % (row.protocol, row.host, row.port))
 
     def select(self, n):
         """Randomly selects ``n`` proxy records. If ``n`` is 1, it returns a single
@@ -113,10 +115,10 @@ class ProxyFactory:
         """
 
         if n <= 0:
-            raise Exception('n must be a positive integer.')
+            raise Exception("n must be a positive integer.")
 
         if n > self.session.query(Proxy).count():
-            raise Exception('Not enough proxy servers.')
+            raise Exception("Not enough proxy servers.")
 
         # statement = '''
         #     SELECT *, avg(access_time) AS avg_access_time FROM (
@@ -124,7 +126,7 @@ class ProxyFactory:
         #     ) GROUP BY proxy_id ORDER BY avg_access_time
         # '''
 
-        statement = '''
+        statement = """
             SELECT * FROM proxy LEFT JOIN (
                 SELECT proxy_id, avg(access_time) AS avg_access_time, avg(alive) AS hit_ratio
                     FROM (SELECT * FROM access_record ORDER BY "timestamp" DESC LIMIT 2500) AS t1
@@ -132,12 +134,16 @@ class ProxyFactory:
                 ) AS ar ON proxy.rowid = ar.proxy_id
                 ORDER BY ar.hit_ratio DESC, ar.avg_access_time
                 LIMIT :n
-        '''
+        """
 
-        #timestamp = datetime.utcnow() - timedelta(hours=1)
+        # timestamp = datetime.utcnow() - timedelta(hours=1)
 
-        record = self.session.query(Proxy).from_statement( \
-            text(statement)).params(n=n).all()
+        record = (
+            self.session.query(Proxy)
+            .from_statement(text(statement))
+            .params(n=n)
+            .all()
+        )
 
         return record
 
@@ -147,16 +153,15 @@ class ProxyFactory:
         #     return self.session.query(Proxy).order_by(func.random()).first()
         #     #raise Exception('No available proxy found.')
 
-
     def get_evaluation_targets(self):
-        statement = '''
+        statement = """
             SELECT * FROM proxy LEFT JOIN (
                 SELECT proxy_id, count(*) AS count
                     FROM (SELECT * FROM access_record ORDER BY "timestamp" DESC LIMIT 2500) AS t1
                     GROUP BY proxy_id
                 ) AS ar ON proxy.rowid = ar.proxy_id
                 WHERE ar.count IS NULL OR ar.count < 10
-        '''
+        """
 
         record = self.session.query(Proxy).from_statement(text(statement))
 
@@ -165,32 +170,54 @@ class ProxyFactory:
     def report(self, id, status):
         pass
 
-
-    def make_request(self, url, headers=None, params=None, data=None, timeout=5,
-        req_type=requests.get, proxy=None, pool_size=5):
-        """Fetches a URL via a automatically selected proxy server, then reports the status."""
+    def make_request(
+        self,
+        url,
+        headers=None,
+        params=None,
+        data=None,
+        timeout=5,
+        req_type=requests.get,
+        proxy=None,
+        pool_size=5,
+    ):
+        """Fetches a URL via a automatically selected proxy server, then
+        reports the status.
+        """
 
         from datetime import datetime
         from requests.exceptions import ConnectionError, Timeout
         import time
 
-        if proxy == None:
+        if proxy is None:
             proxy = random.choice(self.select(pool_size).all())
-            self.logger.info('No proxy is given. {0} has been selected.'.format(proxy))
+            self.logger.info(
+                "No proxy is given. {0} has been selected.".format(proxy)
+            )
 
-        proxy_dict = {'%s' % proxy.protocol: '{0}://{1}:{2}'.format(
-            proxy.protocol, proxy.host, proxy.port)}
+        proxy_dict = {
+            "%s"
+            % proxy.protocol: "{0}://{1}:{2}".format(
+                proxy.protocol, proxy.host, proxy.port
+            )
+        }
 
         start_time = time.time()
         r = None
         alive = 0.0
         status_code = None
         try:
-            if 'timeout' in self.config:
-                timeout = self.config['timeout']
+            if "timeout" in self.config:
+                timeout = self.config["timeout"]
 
-            r = req_type(url, headers=headers, params=params, data=data,
-                proxies=proxy_dict, timeout=timeout)
+            r = req_type(
+                url,
+                headers=headers,
+                params=params,
+                data=data,
+                proxies=proxy_dict,
+                timeout=timeout,
+            )
 
             status_code = r.status_code
             alive = 1.0 if status_code == 200 else -0.5
@@ -212,10 +239,11 @@ class ProxyFactory:
                 timestamp=datetime.utcnow(),
                 alive=alive,
                 url=url,
-                access_time=end_time-start_time,
-                status_code=status_code)
+                access_time=end_time - start_time,
+                status_code=status_code,
+            )
 
-            self.logger.info('Inserting access record: {0}'.format(record))
+            self.logger.info("Inserting access record: {0}".format(record))
 
             try:
                 self.session.add(record)
@@ -224,6 +252,7 @@ class ProxyFactory:
                 self.logger.exception(e)
                 self.session.rollback()
 
-            if r != None: self.logger.debug('Response body: %s' % r.text)
+            if r is not None:
+                self.logger.debug("Response body: %s" % r.text)
 
         return r
