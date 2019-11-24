@@ -5,8 +5,10 @@ from threading import Thread
 
 import click
 import logging
+import requests
 
-from hallucination import ProxyFactory
+from hallucination import ProxyFactory, proxied_request
+from hallucination import proxied_request
 
 
 logger = logging.getLogger("hallucination")
@@ -112,6 +114,12 @@ def evaluate():
     queue.join()
     for proxy in proxies:
         proxy_factory.update_statistics(proxy)
+
+
+@cli.command()
+@click.argument("url")
+def test(url):
+    proxied_request(requests.get)(url)
 
 
 if __name__ == "__main__":
