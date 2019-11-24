@@ -118,7 +118,7 @@ class ProxyFactory:
         """
 
         if n <= 0:
-            raise Exception("n must be a positive integer.")
+            raise ValueError("n must be a positive integer.")
 
         if n > self.session.query(Proxy).count():
             raise Exception("Not enough proxy servers.")
