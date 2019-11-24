@@ -190,6 +190,7 @@ class ProxyFactory:
 
         start_time = time.time()
         r = None
+        exception = None
         alive = 0.0
         status_code = None
         try:
@@ -210,12 +211,15 @@ class ProxyFactory:
 
         except ConnectionError as e:
             self.logger.error(e)
+            exception = e
 
         except Timeout as e:
             self.logger.error(e)
+            exception = e
 
         except Exception as e:
             self.logger.exception(e)
+            exception = e
 
         finally:
             end_time = time.time()
@@ -242,11 +246,15 @@ class ProxyFactory:
             except Exception as e:
                 self.logger.exception(e)
                 self.session.rollback()
+                exception = e
 
             if r is not None:
                 self.logger.debug("Response body: %s" % r.text)
 
-        return r
+        if exception:
+            raise exception
+        else:
+            return r
 
     def update_statistics(self, proxy):
         proxy.hit_ratio, proxy.latency = (
@@ -278,10 +286,13 @@ def proxied_request(func):
     def wrapper(url, *args, **kwargs):
         parsed_url = urlparse(url)
         [proxy] = factory.select([parsed_url.scheme], 1)
-        resp = factory.make_request(
-            url, *args, req_type=func, proxy=proxy, **kwargs
-        )
-        factory.update_statistics(proxy)
+        try:
+            resp = factory.make_request(
+                url, *args, req_type=func, proxy=proxy, **kwargs
+            )
+        except Exception as e:
+            factory.update_statistics(proxy)
+            raise e
         return resp
 
     return wrapper
