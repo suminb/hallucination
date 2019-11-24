@@ -3,6 +3,7 @@ import random
 import re
 import sys
 import time
+from urllib.parse import urlparse
 
 import logging
 import requests
@@ -189,8 +190,13 @@ class ProxyFactory:
         reports the status.
         """
 
+        parsed_url = urlparse(url)
+        if proxy.protocol != parsed_url.scheme:
+            raise ValueError(f"Proxy protocol ({proxy.protocol}) and URL scheme ({parsed_url.scheme}) do not match")
+
         if proxy is None:
-            proxy = random.choice(self.select(pool_size).all())
+            proxy = random.choice(
+                self.select(n=pool_size, protocols=[parsed_url.scheme]).all())
             self.logger.info(
                 "No proxy is given. {0} has been selected.".format(proxy)
             )

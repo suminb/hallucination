@@ -16,7 +16,7 @@ logger.setLevel(logging.INFO)
 config = {}
 
 # FIXME: This is not a good design
-url = "https://translate.google.com"
+url = "{protocol}://translate.google.com"
 proxy_factory = None
 
 threads = 8
@@ -105,7 +105,7 @@ def evaluate():
         thread.start()
 
     for proxy in proxy_factory.get_evaluation_targets():
-        queue.put((url, proxy))
+        queue.put((url.format(protocol=proxy.protocol), proxy))
 
     queue.join()
 
