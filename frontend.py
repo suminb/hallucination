@@ -2,7 +2,7 @@ from hallucination import ProxyFactory
 from hallucination.models import Proxy
 from multiprocessing import Pool
 from threading import Thread, Lock
-from Queue import Queue
+from queue import Queue
 
 import getopt
 import os, sys
@@ -40,7 +40,7 @@ class TestrunThread(Thread):
             url, proxy = self.queue.get()
 
             logger.info('Test run: Fetching %s via %s' % (url, proxy))
-            self.proxy_factory.make_request(url, proxy=proxy, timeout=3)
+            self.proxy_factory.make_request(url, proxy=proxy, timeout=10)
 
             self.queue.task_done()
 
@@ -84,10 +84,11 @@ def evaluate():
 
 
 def parse_config(file_name):
-    raw_config = file(file_name, 'r').read()
+    with open(file_name) as fin:
+        raw_config = fin.read()
 
-    global config
-    config = json.loads(raw_config)
+        global config
+        config = json.loads(raw_config)
 
 
 def main():

@@ -1,4 +1,4 @@
-from sqlalchemy import MetaData, create_engine
+from sqlalchemy import MetaData, create_engine, text
 from sqlalchemy.sql.expression import func, select
 from sqlalchemy.orm import sessionmaker, aliased
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
@@ -157,8 +157,7 @@ class ProxyFactory:
                 WHERE ar.count IS NULL OR ar.count < 10
         '''
 
-        record = self.session.query(Proxy).from_statement( \
-            statement)
+        record = self.session.query(Proxy).from_statement(text(statement))
 
         return record
 
