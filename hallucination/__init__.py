@@ -1,8 +1,12 @@
+from datetime import datetime
 import random
+import re
 import sys
+import time
 
 import logging
 import requests
+from requests.exceptions import ConnectionError, Timeout
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
@@ -70,7 +74,6 @@ class ProxyFactory:
 
     def import_proxies(self, fin=sys.stdin):
         """Imports a list of proxy servers from a text file."""
-        import re
 
         if type(fin) == str:
             res = None
@@ -184,10 +187,6 @@ class ProxyFactory:
         """Fetches a URL via a automatically selected proxy server, then
         reports the status.
         """
-
-        from datetime import datetime
-        from requests.exceptions import ConnectionError, Timeout
-        import time
 
         if proxy is None:
             proxy = random.choice(self.select(pool_size).all())
