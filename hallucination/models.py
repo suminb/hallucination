@@ -1,8 +1,19 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, MetaData
-from sqlalchemy.schema import UniqueConstraint
-from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
+from datetime import datetime
+import time
 
 import logging
+import requests
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Float,
+    DateTime,
+    MetaData,
+)
+from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
+from sqlalchemy.schema import UniqueConstraint
+
 
 DEFAULT_TIMEOUT = 5
 
@@ -11,13 +22,18 @@ Base = declarative_base()
 
 def serialize(obj):
     import json
+
     if isinstance(obj.__class__, DeclarativeMeta):
         # an SQLAlchemy class
         fields = {}
-        for field in [x for x in dir(obj) if not x.startswith('_') and x != 'metadata']:
+        for field in [
+            x for x in dir(obj) if not x.startswith("_") and x != "metadata"
+        ]:
             data = obj.__getattribute__(field)
             try:
-                json.dumps(data) # this will fail on non-encodable values, like other classes
+                json.dumps(
+                    data
+                )  # this will fail on non-encodable values, like other classes
                 fields[field] = data
             except TypeError:
                 fields[field] = None
@@ -39,22 +55,27 @@ class Proxy(Base):
 
     """
 
-    __tablename__ = 'proxy'
-    __table_args__ = (UniqueConstraint('protocol', 'host', 'port'),)
+    __tablename__ = "proxy"
+    __table_args__ = (UniqueConstraint("protocol", "host", "port"),)
 
     __metadata__ = MetaData()
 
-    id = Column('rowid', Integer, primary_key=True)
+    id = Column("rowid", Integer, primary_key=True)
     protocol = Column(String(8))
     host = Column(String(255))
     port = Column(Integer)
 
-    #hit_ratio = Column(Float) # aggregated value
-    #access_time = Column(Float) # aggregated average value
-    last_updated = Column(DateTime(timezone=True)) # aggregated average value
+    # hit_ratio = Column(Float) # aggregated value
+    # access_time = Column(Float) # aggregated average value
+    last_updated = Column(DateTime(timezone=True))  # aggregated average value
 
     def __repr__(self):
-        return 'Proxy (id=%d) %s://%s:%d' % (self.id, self.protocol, self.host, self.port)
+        return "Proxy (id=%d) %s://%s:%d" % (
+            self.id,
+            self.protocol,
+            self.host,
+            self.port,
+        )
 
     def serialize(self):
         return serialize(self)
@@ -66,9 +87,9 @@ class Proxy(Base):
         import random
         import requests
 
-        proxy_dict = {'http': '%s:%d' % (self.host, self.port)}
+        proxy_dict = {"http": "%s:%d" % (self.host, self.port)}
         random_key = random.randint(0, 100000000)
-        url = 'http://static.suminb.com/ref.php?key=%d' % random_key
+        url = "http://static.suminb.com/ref.php?key=%d" % random_key
 
         try:
             r = requests.get(url, proxies=proxy_dict, timeout=timeout)
@@ -87,8 +108,8 @@ class Proxy(Base):
 
         import requests
 
-        proxy_dict = {'http': '%s:%d' % (self.host, self.port)}
-        url = 'http://static.suminb.com/nonexisting'
+        proxy_dict = {"http": "%s:%d" % (self.host, self.port)}
+        url = "http://static.suminb.com/nonexisting"
 
         try:
             r = requests.get(url, proxies=proxy_dict, timeout=timeout)
@@ -102,15 +123,17 @@ class Proxy(Base):
         return False
 
     def test_nonexisting_domain(self, timeout=DEFAULT_TIMEOUT):
-        """Tests if the proxy server times-out when trying to access a non-existing domain."""
+        """Tests if the proxy server times-out when trying to access a
+        non-existing domain.
+        """
 
         import requests
 
-        proxy_dict = {'http': '%s:%d' % (self.host, self.port)}
-        url = 'http://nonexisting.suminb.com'
+        proxy_dict = {"http": "%s:%d" % (self.host, self.port)}
+        url = "http://nonexisting.suminb.com"
 
         try:
-            r = requests.get(url, proxies=proxy_dict, timeout=timeout)
+            requests.get(url, proxies=proxy_dict, timeout=timeout)
 
             # Should not reach here unless the proxy is lying.
             return False
@@ -122,12 +145,7 @@ class Proxy(Base):
 
     def fetch_url(self, url, headers=[], params=[]):
 
-        from datetime import datetime
-        import time
-        import requests
-        import proxybank
-
-        proxy_dict = {self.protocol: '%s:%d' % (self.host, self.port)}
+        proxy_dict = {self.protocol: "%s:%d" % (self.host, self.port)}
         alive = False
         status_code = None
 
@@ -135,14 +153,19 @@ class Proxy(Base):
 
         try:
             # TODO: Support for other HTTP verbs
-            req = requests.get(url, headers=headers, proxies=proxy_dict, timeout=DEFAULT_TIMEOUT)
+            req = requests.get(
+                url,
+                headers=headers,
+                proxies=proxy_dict,
+                timeout=DEFAULT_TIMEOUT,
+            )
             alive = True
             status_code = req.status_code
 
-        except ConnectionError as e:
+        except requests.ConnectionError as e:
             logging.exception(e)
 
-        except Timeout as e:
+        except requests.Timeout as e:
             logging.exception(e)
 
         end_time = time.time()
@@ -152,8 +175,9 @@ class Proxy(Base):
             timestamp=datetime.now(),
             alive=alive,
             url=url,
-            access_time=end_time-start_time,
-            status_code=status_code)
+            access_time=end_time - start_time,
+            status_code=status_code,
+        )
 
         db.session.add(record)
         db.session.commit()
@@ -162,26 +186,31 @@ class Proxy(Base):
 
 
 class AccessRecord(Base):
-    __tablename__ = 'access_record'
+    __tablename__ = "access_record"
 
     __metadata__ = MetaData()
 
-    id = Column('rowid', Integer, primary_key=True)
+    id = Column("rowid", Integer, primary_key=True)
     proxy_id = Column(Integer)
     timestamp = Column(DateTime(timezone=True))
 
     user_agent = Column(String(255))
     remote_address = Column(String(64))
-    
+
     alive = Column(Float)
     url = Column(String(255))
     status_code = Column(Integer)
     access_time = Column(Float)
 
     def __repr__(self):
-        return 'AccessRecord({}, {}, {}, {}, {}, {})'.format(
-            self.id, self.proxy_id, self.timestamp, self.alive,
-            self.status_code, self.access_time)
+        return "AccessRecord({}, {}, {}, {}, {}, {})".format(
+            self.id,
+            self.proxy_id,
+            self.timestamp,
+            self.alive,
+            self.status_code,
+            self.access_time,
+        )
 
     def serialize(self):
         return serialize(self)
