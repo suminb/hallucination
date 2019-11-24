@@ -267,15 +267,21 @@ class ProxyFactory:
 
 # 'Proxy' doesn't seem to be valid as a verb. Any better term?
 def proxied_request(func):
-    config = {
-        "db_uri": os.environ.get("HALLUCINATION_DB_URI")
-    }
+    if "HALLUCINATION_DB_URI" not in os.environ:
+        raise RuntimeError(
+            "HALLUCINATION_DB_URI environment variable must be provided"
+        )
+    config = {"db_uri": os.environ.get("HALLUCINATION_DB_URI")}
     factory = ProxyFactory(config=config)
+
     @functools.wraps(func)
     def wrapper(url, *args, **kwargs):
         parsed_url = urlparse(url)
         [proxy] = factory.select([parsed_url.scheme], 1)
-        resp = factory.make_request(url, *args, req_type=func, proxy=proxy, **kwargs)
+        resp = factory.make_request(
+            url, *args, req_type=func, proxy=proxy, **kwargs
+        )
         factory.update_statistics(proxy)
         return resp
+
     return wrapper
