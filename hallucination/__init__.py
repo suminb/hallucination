@@ -113,8 +113,8 @@ class ProxyFactory:
             out.write("%s://%s:%d\n" % (row.protocol, row.host, row.port))
 
     def select(self, protocols=["http", "https"], n=1):
-        """Randomly selects ``n`` proxy records. If ``n`` is 1, it returns a single
-        object. It returns a list of objects otherwise.
+        """Randomly selects ``n`` proxy records. If ``n`` is 1, it returns a
+        single object. It returns a list of objects otherwise.
 
         :param protocols: Request endpoint protocol (http, https)
         """
@@ -125,39 +125,12 @@ class ProxyFactory:
         if n > self.session.query(Proxy).count():
             raise Exception("Not enough proxy servers.")
 
-        # statement = '''
-        #     SELECT *, avg(access_time) AS avg_access_time FROM (
-        #         SELECT *, (-10*alive)+access_time FROM access_record ORDER BY access_time, "timestamp" DESC LIMIT :n
-        #     ) GROUP BY proxy_id ORDER BY avg_access_time
-        # '''
-
-        statement = """
-            SELECT * FROM proxy AS p LEFT JOIN (
-                SELECT proxy_id, avg(latency) AS avg_latency, avg(alive) AS hit_ratio
-                    FROM (SELECT * FROM access_record ORDER BY created_at DESC LIMIT 2500) AS t1
-                    GROUP BY proxy_id
-                ) AS ar ON p.rowid = ar.proxy_id
-                WHERE p.protocol IN :protocols
-                ORDER BY ar.hit_ratio DESC, ar.avg_latency
-                LIMIT :n
-        """
-
-        # timestamp = datetime.utcnow() - timedelta(hours=1)
-
-        record = (
+        return (
             self.session.query(Proxy)
-            .from_statement(text(statement))
-            .params(protocols=tuple(protocols), n=n)
-            .all()
+            .filter(Proxy.protocol.in_(protocols))
+            .order_by(Proxy.hit_ratio.desc(), Proxy.latency.desc())
+            .limit(n)
         )
-
-        return record
-
-        # if record != None:
-        #     return self.session.query(Proxy).filter_by(id=record.proxy_id).first()
-        # else:
-        #     return self.session.query(Proxy).order_by(func.random()).first()
-        #     #raise Exception('No available proxy found.')
 
     def get_evaluation_targets(self):
         statement = """
