@@ -1,4 +1,6 @@
 from datetime import datetime
+import functools
+import os
 import random
 import re
 import sys
@@ -130,6 +132,7 @@ class ProxyFactory:
             .filter(Proxy.protocol.in_(protocols))
             .order_by(Proxy.hit_ratio.desc(), Proxy.latency.desc())
             .limit(n)
+            .all()
         )
 
     def get_evaluation_targets(self):
@@ -260,3 +263,19 @@ class ProxyFactory:
         except Exception as e:
             self.logger.exception(e)
             self.session.rollback()
+
+
+# 'Proxy' doesn't seem to be valid as a verb. Any better term?
+def proxied_request(func):
+    config = {
+        "db_uri": os.environ.get("HALLUCINATION_DB_URI")
+    }
+    factory = ProxyFactory(config=config)
+    @functools.wraps(func)
+    def wrapper(url, *args, **kwargs):
+        parsed_url = urlparse(url)
+        [proxy] = factory.select([parsed_url.scheme], 1)
+        resp = factory.make_request(url, *args, req_type=func, proxy=proxy, **kwargs)
+        factory.update_statistics(proxy)
+        return resp
+    return wrapper

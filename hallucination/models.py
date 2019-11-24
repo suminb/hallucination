@@ -20,7 +20,7 @@ from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy.schema import UniqueConstraint
 
 
-DEFAULT_TIMEOUT = 5
+DEFAULT_TIMEOUT = 15
 
 Base = declarative_base()
 
