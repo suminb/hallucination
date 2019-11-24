@@ -1,9 +1,9 @@
-import getopt
 import json
 from queue import Queue
 import sys
 from threading import Thread
 
+import click
 import logging
 
 from hallucination import ProxyFactory
@@ -16,7 +16,7 @@ logger.setLevel(logging.INFO)
 config = {}
 
 # FIXME: This is not a good design
-url = "http://translate.google.com"
+url = "https://translate.google.com"
 proxy_factory = None
 
 threads = 8
@@ -44,24 +44,46 @@ class TestrunThread(Thread):
             self.queue.task_done()
 
 
+@click.group()
+def cli():
+    # FIXME: Temporary workaround
+    with open("config.json") as fin:
+        global config
+        config = json.loads(fin.read())
+
+    global proxy_factory
+    proxy_factory = ProxyFactory(
+        config=dict(db_uri=config["db_uri"]), logger=logger
+    )
+
+
+@cli.command()
 def create():
     proxy_factory.create_db()
 
 
-def _import(file_path):
+@cli.command()
+@click.argument("input_file", type=click.File("r"))
+def import_list(input_file):
     """Imports a list of proxy servers from a text file."""
-    proxy_factory.import_proxies(open(file_path, "r"))
+    proxy_factory.import_proxies(input_file)
 
 
-def export(file_path):
+@cli.command()
+@click.argument("output_file", type=click.File("w"))
+def export_list(output_file):
     """Exports the list of proxy servers to the standard output."""
-    proxy_factory.export_proxies(open(file_path, "w"))
+    proxy_factory.export_proxies(output_file)
 
 
-def select():
-    print(proxy_factory.select(1))
+@cli.command()
+@click.argument("n", default=1)
+def select(n):
+    for row in proxy_factory.select(n):
+        print(row)
 
 
+@cli.command()
 def evaluate():
     """
     Selects proxy servers that have not been recently evaluated, and evaluates
@@ -83,51 +105,5 @@ def evaluate():
     queue.join()
 
 
-def parse_config(file_name):
-    with open(file_name) as fin:
-        raw_config = fin.read()
-
-        global config
-        config = json.loads(raw_config)
-
-
-def main():
-    opts, args = getopt.getopt(sys.argv[1:], "cti:x:sd:E", ["config="])
-
-    rf = None
-    params = []
-    for o, a in opts:
-        if o == "-c":
-            rf = create
-        elif o == "-t":
-            rf = testrun
-        elif o == "-i":
-            rf = _import
-            params = [a]
-        elif o == "-x":
-            rf = export
-            params = [a]
-        elif o == "-s":
-            rf = select
-        elif o == "-E":
-            rf = evaluate
-
-        elif o == "--config":
-            parse_config(a)
-
-        elif o == "-d":
-            config["db_uri"] = "sqlite:///%s" % a
-
-    global proxy_factory
-    proxy_factory = ProxyFactory(
-        config=dict(db_uri=config["db_uri"]), logger=logger
-    )
-
-    if rf is not None:
-        rf(*params)
-    else:
-        raise Exception("Runtime mode is not specified.")
-
-
 if __name__ == "__main__":
-    main()
+    cli()

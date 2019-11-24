@@ -1,3 +1,4 @@
+click==7.0
 sqlalchemy
 requests
 pytest

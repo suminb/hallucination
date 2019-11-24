@@ -14,6 +14,7 @@ import os, sys
 import random
 
 class ProxyFactory:
+    # Why is this called 'factory'?
 
     def __init__(self, config={}, db_engine=None, logger=logging.getLogger('hallucination')):
         self.config = config
@@ -136,7 +137,7 @@ class ProxyFactory:
         #timestamp = datetime.utcnow() - timedelta(hours=1)
 
         record = self.session.query(Proxy).from_statement( \
-            statement).params(n=n)
+            text(statement)).params(n=n).all()
 
         return record
 
