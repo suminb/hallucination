@@ -124,13 +124,15 @@ class ProxyFactory:
         if n <= 0:
             raise ValueError("n must be a positive integer.")
 
-        if n > self.session.query(Proxy).count():
+        count = self.session.query(Proxy).count()
+        if n > count:
             raise Exception("Not enough proxy servers.")
 
         return (
             self.session.query(Proxy)
             .filter(Proxy.protocol.in_(protocols))
             .order_by(Proxy.hit_ratio.desc(), Proxy.latency.desc())
+            .offset(random.randint(0, (count - n) // 2))
             .limit(n)
             .all()
         )
