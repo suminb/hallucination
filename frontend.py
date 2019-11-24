@@ -78,8 +78,13 @@ def export_list(output_file):
 
 @cli.command()
 @click.argument("n", default=1)
-def select(n):
-    for row in proxy_factory.select(n):
+@click.argument("protocols", nargs=-1)
+def select(n, protocols):
+    if not protocols:
+        # Provide some reasonable default value
+        protocols = ["http", "https"]
+
+    for row in proxy_factory.select(n=n, protocols=protocols):
         print(row)
 
 

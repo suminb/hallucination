@@ -110,11 +110,11 @@ class ProxyFactory:
         for row in self.session.query(Proxy).all():
             out.write("%s://%s:%d\n" % (row.protocol, row.host, row.port))
 
-    def select(self, n):
+    def select(self, protocols=["http", "https"], n=1):
         """Randomly selects ``n`` proxy records. If ``n`` is 1, it returns a single
         object. It returns a list of objects otherwise.
 
-        NOTE: Currently the value of ``n`` is being ignored.
+        :param protocols: Request endpoint protocol (http, https)
         """
 
         if n <= 0:
@@ -130,12 +130,13 @@ class ProxyFactory:
         # '''
 
         statement = """
-            SELECT * FROM proxy LEFT JOIN (
-                SELECT proxy_id, avg(access_time) AS avg_access_time, avg(alive) AS hit_ratio
+            SELECT * FROM proxy AS p LEFT JOIN (
+                SELECT proxy_id, avg(latency) AS avg_latency, avg(alive) AS hit_ratio
                     FROM (SELECT * FROM access_record ORDER BY created_at DESC LIMIT 2500) AS t1
                     GROUP BY proxy_id
-                ) AS ar ON proxy.rowid = ar.proxy_id
-                ORDER BY ar.hit_ratio DESC, ar.avg_access_time
+                ) AS ar ON p.rowid = ar.proxy_id
+                WHERE p.protocol IN :protocols
+                ORDER BY ar.hit_ratio DESC, ar.avg_latency
                 LIMIT :n
         """
 
@@ -144,7 +145,7 @@ class ProxyFactory:
         record = (
             self.session.query(Proxy)
             .from_statement(text(statement))
-            .params(n=n)
+            .params(protocols=tuple(protocols), n=n)
             .all()
         )
 
