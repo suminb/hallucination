@@ -1,4 +1,6 @@
 from datetime import datetime
+import json
+import random
 import time
 
 import logging
@@ -21,7 +23,6 @@ Base = declarative_base()
 
 
 def serialize(obj):
-    import json
 
     if isinstance(obj.__class__, DeclarativeMeta):
         # an SQLAlchemy class
@@ -81,11 +82,9 @@ class Proxy(Base):
         return serialize(self)
 
     def test_reference_page(self, timeout=DEFAULT_TIMEOUT):
-        """Tests if the proxy server returns an HTTP 200 message and a correct content
-        when trying to access a reference page."""
-
-        import random
-        import requests
+        """Tests if the proxy server returns an HTTP 200 message and a
+        correct content when trying to access a reference page.
+        """
 
         proxy_dict = {"http": "%s:%d" % (self.host, self.port)}
         random_key = random.randint(0, 100000000)
@@ -103,10 +102,9 @@ class Proxy(Base):
         return False
 
     def test_nonexisting_page(self, timeout=DEFAULT_TIMEOUT):
-        """Tests if the proxy server returns an HTTP 404 message when trying to access a
-        non-existing page."""
-
-        import requests
+        """Tests if the proxy server returns an HTTP 404 message when trying
+        to access a non-existing page.
+        """
 
         proxy_dict = {"http": "%s:%d" % (self.host, self.port)}
         url = "http://static.suminb.com/nonexisting"
@@ -126,8 +124,6 @@ class Proxy(Base):
         """Tests if the proxy server times-out when trying to access a
         non-existing domain.
         """
-
-        import requests
 
         proxy_dict = {"http": "%s:%d" % (self.host, self.port)}
         url = "http://nonexisting.suminb.com"
