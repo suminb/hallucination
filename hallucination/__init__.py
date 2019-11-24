@@ -166,11 +166,15 @@ class ProxyFactory:
 
         parsed_url = urlparse(url)
         if proxy.protocol != parsed_url.scheme:
-            raise ValueError(f"Proxy protocol ({proxy.protocol}) and URL scheme ({parsed_url.scheme}) do not match")
+            raise ValueError(
+                f"Proxy protocol ({proxy.protocol}) and "
+                f"URL scheme ({parsed_url.scheme}) do not match"
+            )
 
         if proxy is None:
             proxy = random.choice(
-                self.select(n=pool_size, protocols=[parsed_url.scheme]).all())
+                self.select(n=pool_size, protocols=[parsed_url.scheme]).all()
+            )
             self.logger.info(
                 "No proxy is given. {0} has been selected.".format(proxy)
             )
@@ -242,10 +246,13 @@ class ProxyFactory:
         return r
 
     def update_statistics(self, proxy):
-        proxy.hit_ratio, proxy.latency = self.session.query(
-            func.avg(AccessRecord.alive),
-            func.avg(AccessRecord.latency),
-        ).filter(AccessRecord.proxy_id == proxy.id).first()
+        proxy.hit_ratio, proxy.latency = (
+            self.session.query(
+                func.avg(AccessRecord.alive), func.avg(AccessRecord.latency),
+            )
+            .filter(AccessRecord.proxy_id == proxy.id)
+            .first()
+        )
 
         try:
             self.session.add(proxy)
