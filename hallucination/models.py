@@ -6,11 +6,14 @@ import time
 import logging
 import requests
 from sqlalchemy import (
+    BigInteger,
     Column,
-    Integer,
-    String,
-    Float,
     DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    SmallInteger,
+    String,
     MetaData,
 )
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
@@ -48,12 +51,11 @@ class Proxy(Base):
     The ROWID for each row is unique among all rows in the same table.
 
     You can access the ROWID of an SQLite table using one the special column
-    names ROWID, _ROWID_, or OID. Except if you declare an ordinary table column
-    to use one of those special names, then the use of that name will refer to
-    the declared column not to the internal ROWID.
+    names ROWID, _ROWID_, or OID. Except if you declare an ordinary table
+    column to use one of those special names, then the use of that name will
+    refer to the declared column not to the internal ROWID.
 
     See http://sqlite.org/autoinc.html for more details.
-
     """
 
     __tablename__ = "proxy"
@@ -61,14 +63,14 @@ class Proxy(Base):
 
     __metadata__ = MetaData()
 
-    id = Column("rowid", Integer, primary_key=True)
+    id = Column("rowid", BigInteger, primary_key=True)
     protocol = Column(String(8))
     host = Column(String(255))
     port = Column(Integer)
 
-    # hit_ratio = Column(Float) # aggregated value
-    # access_time = Column(Float) # aggregated average value
-    last_updated = Column(DateTime(timezone=True))  # aggregated average value
+    hit_ratio = Column(Float)  # aggregated value
+    latency = Column(Float)  # aggregated average value
+    updated_at = Column(DateTime(timezone=True))
 
     def __repr__(self):
         return "Proxy (id=%d) %s://%s:%d" % (
@@ -168,10 +170,10 @@ class Proxy(Base):
 
         record = AccessRecord(
             proxy_id=self.id,
-            timestamp=datetime.now(),
+            created_at=datetime.now(),
             alive=alive,
             url=url,
-            access_time=end_time - start_time,
+            latency=end_time - start_time,
             status_code=status_code,
         )
 
@@ -182,30 +184,30 @@ class Proxy(Base):
 
 
 class AccessRecord(Base):
-    __tablename__ = "access_record"
 
+    __tablename__ = "access_record"
     __metadata__ = MetaData()
 
-    id = Column("rowid", Integer, primary_key=True)
-    proxy_id = Column(Integer)
-    timestamp = Column(DateTime(timezone=True))
+    id = Column("rowid", BigInteger, primary_key=True)
+    proxy_id = Column(BigInteger, ForeignKey("proxy.rowid"))
+    created_at = Column(DateTime(timezone=True))
 
     user_agent = Column(String(255))
     remote_address = Column(String(64))
 
     alive = Column(Float)
     url = Column(String(255))
-    status_code = Column(Integer)
-    access_time = Column(Float)
+    status_code = Column(SmallInteger)
+    latency = Column(Float)
 
     def __repr__(self):
         return "AccessRecord({}, {}, {}, {}, {}, {})".format(
             self.id,
             self.proxy_id,
-            self.timestamp,
+            self.created_at,
             self.alive,
             self.status_code,
-            self.access_time,
+            self.latency,
         )
 
     def serialize(self):

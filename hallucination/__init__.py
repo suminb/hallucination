@@ -132,7 +132,7 @@ class ProxyFactory:
         statement = """
             SELECT * FROM proxy LEFT JOIN (
                 SELECT proxy_id, avg(access_time) AS avg_access_time, avg(alive) AS hit_ratio
-                    FROM (SELECT * FROM access_record ORDER BY "timestamp" DESC LIMIT 2500) AS t1
+                    FROM (SELECT * FROM access_record ORDER BY created_at DESC LIMIT 2500) AS t1
                     GROUP BY proxy_id
                 ) AS ar ON proxy.rowid = ar.proxy_id
                 ORDER BY ar.hit_ratio DESC, ar.avg_access_time
@@ -160,7 +160,7 @@ class ProxyFactory:
         statement = """
             SELECT * FROM proxy LEFT JOIN (
                 SELECT proxy_id, count(*) AS count
-                    FROM (SELECT * FROM access_record ORDER BY "timestamp" DESC LIMIT 2500) AS t1
+                    FROM (SELECT * FROM access_record ORDER BY created_at DESC LIMIT 2500) AS t1
                     GROUP BY proxy_id
                 ) AS ar ON proxy.rowid = ar.proxy_id
                 WHERE ar.count IS NULL OR ar.count < 10
@@ -195,8 +195,7 @@ class ProxyFactory:
             )
 
         proxy_dict = {
-            "%s"
-            % proxy.protocol: "{0}://{1}:{2}".format(
+            str(proxy.protocol): "{0}://{1}:{2}".format(
                 proxy.protocol, proxy.host, proxy.port
             )
         }
@@ -235,10 +234,10 @@ class ProxyFactory:
 
             record = AccessRecord(
                 proxy_id=proxy.id,
-                timestamp=datetime.utcnow(),
+                created_at=datetime.utcnow(),
                 alive=alive,
                 url=url,
-                access_time=end_time - start_time,
+                latency=end_time - start_time,
                 status_code=status_code,
             )
 
