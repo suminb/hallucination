@@ -17,7 +17,18 @@ from sqlalchemy.sql import func
 from hallucination.models import AccessRecord, Base, Proxy
 
 
-class ProxyFactory:
+# TODO: Perhaps we want to move this elsewhere
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = \
+                super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class ProxyFactory(metaclass=Singleton):
     # Why is this called 'factory'?
 
     def __init__(
