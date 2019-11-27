@@ -56,6 +56,10 @@ class ProxyFactory(metaclass=Singleton):
         self.session._model_changes = dict()
 
     def __del__(self):
+        self.close()
+
+    def close(self):
+        self.logger.info("Closing connections")
         if hasattr(self, "session") and self.session is not None:
             self.session.close()
 
