@@ -73,12 +73,12 @@ class ProxyFactory(metaclass=Singleton):
     def get(self, id):
         return self.session.query(Proxy).get(id)
 
-    def insert(self, protocol, host, port):
+    def insert(self, protocol, host, port, **kwargs):
         """Inserts a proxy record into the database. Returns an ID of the
         newly created object.
         """
 
-        p = Proxy(protocol=protocol, host=host, port=port)
+        p = Proxy(protocol=protocol, host=host, port=port, **kwargs)
 
         self.session.add(p)
         self.session.commit()

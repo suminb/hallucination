@@ -33,8 +33,9 @@ def test_create():
 def test_empty_pool():
     assert factory.get(1) == None
 
+
 def test_insertion():
-    pid = factory.insert('http', '12.199.141.164', 8000)
+    pid = factory.insert('http', '12.199.141.164', 8000, id=1)
     assert pid == 1
 
 def test_import():
