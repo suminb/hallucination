@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 
 import logging
 import requests
-from requests.exceptions import ConnectionError, Timeout
+from requests.exceptions import ConnectionError, RequestException, Timeout
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import func
@@ -179,7 +179,7 @@ class ProxyFactory(metaclass=Singleton):
         headers=None,
         params=None,
         data=None,
-        timeout=5,
+        timeout=10,
         req_type=requests.get,
         proxy=None,
         pool_size=5,
@@ -265,8 +265,8 @@ class ProxyFactory(metaclass=Singleton):
                 self.session.add(record)
                 self.session.commit()
             except Exception as e:
-                self.logger.exception(e)
                 self.session.rollback()
+                self.logger.exception(e)
                 exception = e
 
             if r is not None:
@@ -290,8 +290,8 @@ class ProxyFactory(metaclass=Singleton):
             self.session.add(proxy)
             self.session.commit()
         except Exception as e:
-            self.logger.exception(e)
             self.session.rollback()
+            self.logger.exception(e)
 
 
 # 'Proxy' doesn't seem to be valid as a verb. Any better term?
@@ -301,19 +301,28 @@ def proxied_request(func):
             "HALLUCINATION_DB_URI environment variable must be provided"
         )
     config = {"db_uri": os.environ.get("HALLUCINATION_DB_URI")}
-    factory = ProxyFactory(config=config)
+
+    # TODO: Take this value as paramter
+    max_retries = 5
 
     @functools.wraps(func)
     def wrapper(url, *args, **kwargs):
         parsed_url = urlparse(url)
-        [proxy] = factory.select([parsed_url.scheme], 1)
-        try:
-            resp = factory.make_request(
-                url, *args, req_type=func, proxy=proxy, **kwargs
-            )
-        except Exception as e:
-            factory.update_statistics(proxy)
-            raise e
+        factory = ProxyFactory(config=config)
+        retried = 0
+        while retried < max_retries:
+            [proxy] = factory.select([parsed_url.scheme], 1)
+            try:
+                resp = factory.make_request(
+                    url, *args, req_type=func, proxy=proxy, **kwargs
+                )
+            except RequestException:
+                factory.update_statistics(proxy)
+                retried += 1
+            except Exception as e:
+                raise
+            else:
+                retried = max_retries
         return resp
 
     return wrapper
