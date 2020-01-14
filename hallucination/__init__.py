@@ -143,11 +143,15 @@ class ProxyFactory(metaclass=Singleton):
         if n > count:
             raise Exception("Not enough proxy servers.")
 
+        # Use servers with higher hit ratio more often
+        folded = abs(random.normalvariate(mu=0, sigma=1)) * count / 7
+        clamped = min(folded, count)
+
         return (
             self.session.query(Proxy)
             .filter(Proxy.protocol.in_(protocols))
-            .order_by(Proxy.hit_ratio.desc(), Proxy.latency.desc())
-            .offset(random.randint(0, (count - n) // 2))
+            .order_by(Proxy.hit_ratio.desc(), Proxy.latency)
+            .offset(clamped)
             .limit(n)
             .all()
         )
